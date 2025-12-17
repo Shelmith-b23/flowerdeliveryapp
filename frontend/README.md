@@ -69,6 +69,15 @@ REACT_APP_GOOGLE_MAPS_API_KEY=YOUR_ACTUAL_KEY
 npm start
 ```
 
+If your backend runs on a different port (for example `5001`), set the API base URL so the frontend talks to the right backend:
+
+```bash
+# in frontend/.env
+REACT_APP_API_URL=http://localhost:5001/api
+```
+
+Then restart the frontend dev server.
+
 This resolves the "InvalidKey" warning in the browser console and avoids the key being used from untrusted domains.
 
 
