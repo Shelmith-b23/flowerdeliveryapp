@@ -11,8 +11,11 @@ if envfile.exists():
 
 class Config:
     SECRET_KEY = os.environ.get('SECRET_KEY', 'supersecretkey')
+
+    # 🔹 Use SQLite by default for local dev, override with DATABASE_URL for production
     SQLALCHEMY_DATABASE_URI = os.environ.get(
         'DATABASE_URL',
-        'postgresql://postgres:your_db_password@localhost:5432/flower_delivery'
+        'sqlite:///' + str(basedir / 'flower_delivery.db')
     )
+
     SQLALCHEMY_TRACK_MODIFICATIONS = False

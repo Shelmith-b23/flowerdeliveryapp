@@ -13,18 +13,15 @@ def create_app():
 
     db.init_app(app)
     migrate.init_app(app, db)
-    CORS(app)
+    
+    # 1. Allow React (port 3000) to talk to Flask
+    CORS(app, resources={r"/api/*": {"origins": "http://localhost:3000"}})
 
     from .routes.auth import auth_bp
     from .routes.flowers import flowers_bp
-    from .routes.orders import orders_bp
-    from .routes.messages import messages_bp
-    from .routes.tracking import tracking_bp
 
-    app.register_blueprint(auth_bp, url_prefix='/api/auth')
-    app.register_blueprint(flowers_bp, url_prefix='/api/flowers')
-    app.register_blueprint(orders_bp, url_prefix='/api/orders')
-    app.register_blueprint(messages_bp, url_prefix='/api/messages')
-    app.register_blueprint(tracking_bp, url_prefix='/api/tracking')
+    # 2. strict_slashes=False stops the "Redirect not allowed" CORS error
+    app.register_blueprint(auth_bp, url_prefix='/api/auth', strict_slashes=False)
+    app.register_blueprint(flowers_bp, url_prefix='/api/flowers', strict_slashes=False)
 
     return app

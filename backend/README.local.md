@@ -29,6 +29,8 @@ Alternative: Use `--no-docker` to skip Docker (use existing Postgres or SQLite):
 Additional options / notes:
 - If you prefer to use system-installed Postgres, create the DB and user (update `DATABASE_URL`), then run migrations and server as below.
 - Use SQLite for quick testing by setting `DATABASE_URL` to `sqlite:///dev.db`.
+- The helper script now ensures any process listening on the backend port is terminated before starting (avoids defunct reloader processes), starts the server without the Flask reloader, and writes logs to `/tmp/backend_<PORT>.log` (default port is 5000). You can change the port with `PORT=5001 ./run_local.sh` or via `export PORT=5001`.
+- Use `make start` in the `backend` directory to start the app, `make stop` to stop processes listening on the port, and `make status` to check the root endpoint.
 - If you plan to run the app in production, use a production WSGI server (gunicorn/uwsgi) and secure credentials via a secrets manager.
 
 Commands (system Postgres path):

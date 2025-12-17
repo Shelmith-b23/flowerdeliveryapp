@@ -51,7 +51,17 @@ else
   source venv/bin/activate || true
 fi
 
+# Ensure key packages installed (avoid subtle runtime failures)
+if ! ./venv/bin/python -c "import importlib.util, sys; sys.exit(0) if importlib.util.find_spec('flask_sqlalchemy') else sys.exit(1)"; then
+  echo "Some backend packages appear missing; installing requirements..."
+  ./venv/bin/pip install -r requirements.txt
+fi
+
 export FLASK_APP=run.py
+
+# Default backend port and host
+PORT=${PORT:-5000}
+HOST=${HOST:-127.0.0.1}
 
 # If migrations is a file (unlikely) rename it to avoid conflict
 if [ -f migrations ] && [ ! -d migrations ]; then
@@ -80,5 +90,40 @@ if [ -f seed_data.sql ]; then
   fi
 fi
 
-echo "Starting Flask dev server (http://localhost:5000)..."
-python run.py
+# Ensure no leftover process is listening on the port (avoid defunct/reloader conflicts)
+if command -v lsof >/dev/null 2>&1; then
+  PIDS=$(lsof -t -iTCP:${PORT} -sTCP:LISTEN || true)
+else
+  PIDS=""
+fi
+if [ -n "$PIDS" ]; then
+  echo "Found existing process(es) on port $PORT: $PIDS. Terminating..."
+  kill $PIDS || true
+  sleep 1
+  # Force kill if still present
+  if command -v lsof >/dev/null 2>&1; then
+    STILL=$(lsof -t -iTCP:${PORT} -sTCP:LISTEN || true)
+    if [ -n "$STILL" ]; then
+      echo "Processes still present; forcing kill: $STILL"
+      kill -9 $STILL || true
+    fi
+  fi
+fi
+
+echo "Starting Flask dev server on http://${HOST}:${PORT}..."
+LOGFILE="/tmp/backend_${PORT}.log"
+nohup ./venv/bin/python -c "from app import create_app; create_app().run(debug=False, host='${HOST}', port=${PORT})" > "$LOGFILE" 2>&1 &
+SERVER_PID=$!
+echo "Server PID: $SERVER_PID (logs: $LOGFILE)"
+
+# Wait for server to be reachable
+echo -n "Waiting for server to respond on http://${HOST}:${PORT}..."
+for i in {1..30}; do
+  if curl -s -o /dev/null -w "%{http_code}" "http://${HOST}:${PORT}/" | grep -q "200"; then
+    echo " OK"
+    break
+  fi
+  echo -n "."
+  sleep 1
+done
+echo "Backend started (PID: $SERVER_PID). Tail logs with: tail -f $LOGFILE"
