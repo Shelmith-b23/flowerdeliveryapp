@@ -3,6 +3,7 @@ import api from "../api/axios";
 import FlowerList from "./FlowerList";
 import MessageBox from "./MessageBox";
 import LiveTracking from "./LiveTracking";
+import './BuyerDashboard.css';
 
 export default function BuyerDashboard({ user }) {
   const [orders, setOrders] = useState([]);
@@ -19,50 +20,31 @@ export default function BuyerDashboard({ user }) {
   }, [fetchOrders]);
 
   return (
-    <div>
-      {/* 🔐 Top bar */}
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-        }}
-      >
+    <div className="bdb-container">
+      <div className="bdb-header">
         <h1>Welcome, {user.name}</h1>
-        <button
-          onClick={api.logout}
-          style={{
-            padding: "8px 14px",
-            backgroundColor: "#e74c3c",
-            color: "#fff",
-            border: "none",
-            borderRadius: "4px",
-            cursor: "pointer",
-          }}
-        >
-          Logout
-        </button>
+        <button onClick={api.logout} className="bdb-logout">Logout</button>
       </div>
 
       <FlowerList user={user} />
 
-      <h2>Your Orders</h2>
-      {orders.map((order) => (
-        <div
-          key={order.id}
-          style={{ border: "1px solid #ccc", margin: "5px", padding: "10px" }}
-        >
-          <p>
-            Order #{order.id} – <strong>{order.status}</strong>
-          </p>
+      <h2 style={{ marginTop: 18 }}>Your Orders</h2>
+      <div className="bdb-orders">
+        {orders.map((order) => (
+          <div key={order.id} className="bdb-order">
+            <div className="meta">
+              <div>Order #{order.id}</div>
+              <div className="status"><strong>{order.status}</strong></div>
+            </div>
 
-          <MessageBox orderId={order.id} userId={user.id} />
+            <MessageBox orderId={order.id} userId={user.id} />
 
-          {order.delivery_lat && order.delivery_lng && (
-            <LiveTracking order={order} />
-          )}
-        </div>
-      ))}
+            {order.delivery_lat && order.delivery_lng && (
+              <LiveTracking order={order} />
+            )}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

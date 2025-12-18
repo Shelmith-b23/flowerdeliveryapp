@@ -1,5 +1,6 @@
 import { useState } from "react";
 import api from "../api/axios";
+import './Auth.css';
 
 export default function Login({ setUser, toggleRegister }) {
   const [email, setEmail] = useState("");
@@ -16,81 +17,23 @@ export default function Login({ setUser, toggleRegister }) {
   };
 
   return (
-    <div
-      style={{
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        height: "100vh",
-        backgroundColor: "#f4f6f8",
-      }}
-    >
-      <div
-        style={{
-          backgroundColor: "#fff",
-          padding: "40px",
-          borderRadius: "12px",
-          boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-          width: "350px",
-          textAlign: "center",
-        }}
-      >
-        <h2 style={{ marginBottom: "30px", color: "#333" }}>Login</h2>
+    <div className="auth-container">
+      <div className="auth-card">
+        <h2 className="auth-title">Login</h2>
 
-        <input
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          style={{
-            width: "100%",
-            padding: "12px",
-            marginBottom: "15px",
-            borderRadius: "6px",
-            border: "1px solid #ccc",
-            fontSize: "14px",
-          }}
-        />
+        {error && <div className="auth-error">{error}</div>}
 
-        <input
-          placeholder="Password"
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          style={{
-            width: "100%",
-            padding: "12px",
-            marginBottom: "20px",
-            borderRadius: "6px",
-            border: "1px solid #ccc",
-            fontSize: "14px",
-          }}
-        />
+        <div className="auth-input-group">
+          <input className="auth-input" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} />
+        </div>
 
-        <button
-          onClick={handleLogin}
-          style={{
-            width: "100%",
-            padding: "12px",
-            backgroundColor: "#4CAF50",
-            color: "#fff",
-            border: "none",
-            borderRadius: "6px",
-            fontSize: "16px",
-            cursor: "pointer",
-            marginBottom: "15px",
-          }}
-        >
-          Login
-        </button>
+        <div className="auth-input-group">
+          <input className="auth-input" placeholder="Password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
+        </div>
 
-        {error && <p style={{ color: "red", marginBottom: "15px" }}>{error}</p>}
+        <button className="auth-button" onClick={handleLogin}>Login</button>
 
-        <p
-          onClick={toggleRegister}
-          style={{ cursor: "pointer", color: "#3498db", fontSize: "14px" }}
-        >
-          Don't have an account? Register
-        </p>
+        <p className="auth-toggle">Don't have an account? <span className="auth-link" onClick={toggleRegister}>Register</span></p>
       </div>
     </div>
   );

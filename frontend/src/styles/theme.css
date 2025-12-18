@@ -1,0 +1,16 @@
+/* Shared theme variables and base styles */
+:root{
+  --bg:#fbfaf8;
+  --card:#ffffff;
+  --muted:#6b6b6b;
+  --accent:#8b5e3c; /* warm brown/gold */
+  --accent-soft:#f4e7de;
+  --petal:#f3c6d1;
+  --danger:#e74c3c;
+}
+
+html,body,#root{height:100%}
+body{margin:0;font-family: Georgia, "Times New Roman", serif;background:linear-gradient(180deg,var(--bg) 0%, #fff 40%);color:#222}
+
+/* Utility */
+.container{max-width:1100px;margin:24px auto;padding:0 20px}

@@ -1,29 +1,21 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import api from '../api/axios';
+import './Home.css';
+import TopNav from '../components/TopNav';
 
-export default function Home({ user, setUser }) {
-  // Lightweight navigate helper to avoid a react-router-dom dependency in dev
-  const navigate = (path) => {
-    try {
-      if (window && window.history && typeof window.history.pushState === 'function') {
-        window.history.pushState({}, '', path);
-      } else if (typeof window !== 'undefined') {
-        window.location.href = path;
-      }
-    } catch (err) {
-      // no-op
-    }
-  }; // fallback if outside router
 
-  // Small card component
+export default function Home({ user, setUser, logout }) {
+
+
+  // Small card component (styled)
   const FlowerCard = ({ f }) => (
-    <div style={{ width: 180, border: '1px solid #eee', borderRadius: 8, padding: 10, textAlign: 'left' }}>
-      <div style={{ height: 100, marginBottom: 8, background: '#fafafa', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        {f.image_url ? <img src={f.image_url} alt={f.name} style={{ maxHeight: '100%', maxWidth: '100%', borderRadius: 6 }} /> : <span style={{ color: '#888' }}>No image</span>}
+    <div className="flower-card">
+      <div className="img">{f.image_url ? <img src={f.image_url} alt={f.name} /> : <span style={{ color: '#888' }}>No image</span>}</div>
+      <div className="content">
+        <div className="name">{f.name}</div>
+        <div className="desc">{f.description?.slice(0, 60)}</div>
+        <div className="price">${f.price?.toFixed ? f.price.toFixed(2) : f.price}</div>
       </div>
-      <div style={{ fontWeight: 'bold' }}>{f.name}</div>
-      <div style={{ color: '#666', fontSize: 12 }}>{f.description?.slice(0, 60)}</div>
-      <div style={{ marginTop: 8, fontWeight: 'bold' }}>${f.price?.toFixed ? f.price.toFixed(2) : f.price}</div>
     </div>
   );
 
@@ -41,9 +33,9 @@ export default function Home({ user, setUser }) {
     if (err) return <p style={{ color: 'red' }}>Unable to load best selling items.</p>;
     if (!items.length) return <p>Loading best selling...</p>;
     return (
-      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+      <>
         {items.map(f => <FlowerCard key={f.id} f={f} />)}
-      </div>
+      </>
     );
   };
 
@@ -61,104 +53,59 @@ export default function Home({ user, setUser }) {
     if (err) return <p style={{ color: 'red' }}>Unable to load new arrivals.</p>;
     if (!items.length) return <p>Loading new arrivals...</p>;
     return (
-      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+      <>
         {items.map(f => <FlowerCard key={f.id} f={f} />)}
-      </div>
+      </>
     );
   };
 
 
   const handleLogout = () => {
+    // Prefer parent-provided logout handler (from App) to keep state consistent
+    if (typeof logout === 'function') {
+      logout();
+      try {
+        window.history.pushState({}, '', '/login');
+        window.dispatchEvent(new CustomEvent('navigation', { detail: { path: '/login' } }));
+      } catch (e) {}
+      return;
+    }
+
     localStorage.removeItem("token");
     localStorage.removeItem("user");
+    try { api.setAuthToken(null); } catch (e) {}
     setUser?.(null); // safe in case setUser is undefined
-    navigate?.("/login");
+    try {
+      window.history.pushState({}, '', '/login');
+      window.dispatchEvent(new CustomEvent('navigation', { detail: { path: '/login' } }));
+    } catch (e) {}
   };
 
   return (
-    <div>
-      {/* Navbar */}
-      <nav
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          padding: "10px 20px",
-          backgroundColor: "#4CAF50",
-          color: "#fff",
-        }}
-      >
-        <h2 style={{ cursor: "pointer" }} onClick={() => navigate?.("/")}>
-          Flower Delivery
-        </h2>
+    <div className="home-container">
+      <TopNav user={user} logout={handleLogout} />
 
-        <div style={{ display: "flex", gap: "15px", alignItems: "center" }}>
-          {user ? (
-            <>
-              {user.role === "buyer" && (
-                <>
-                  <button onClick={() => navigate("/categories")} style={navButtonStyle}>
-                    Categories
-                  </button>
-                  <button onClick={() => navigate("/cart")} style={navButtonStyle}>
-                    Cart
-                  </button>
-                </>
-              )}
+      {/* Hero */}
+      <div className="home-hero">
+        <h1>Welcome to Flower Delivery</h1>
+        <p>Handpicked blooms, delivered with care — shop our best selling collections and new arrivals.</p>
+      </div>
 
-              {user.role === "florist" && (
-                <>
-                  <button onClick={() => navigate("/orders")} style={navButtonStyle}>
-                    Orders
-                  </button>
-                  <button onClick={() => navigate("/categories")} style={navButtonStyle}>
-                    Categories
-                  </button>
-                </>
-              )}
-
-              <button onClick={handleLogout} style={navButtonStyle}>
-                Logout
-              </button>
-            </>
-          ) : (
-            <>
-              <button onClick={() => navigate("/login")} style={navButtonStyle}>
-                Login
-              </button>
-              <button onClick={() => navigate("/register")} style={navButtonStyle}>
-                Register
-              </button>
-            </>
-          )}
-        </div>
-      </nav>
 
       {/* Page content */}
-      <main style={{ padding: "40px" }}>
-        <h1 style={{ textAlign: 'center' }}>Welcome to Flower Delivery App</h1>
-
-        <section style={{ marginTop: 30 }}>
+      <main>
+        <section className="section">
           <h2>Best Selling</h2>
-          <BestSelling />
+          <div className="flowers-grid"><BestSelling /></div>
         </section>
 
-        <section style={{ marginTop: 30 }}>
+        <section className="section">
           <h2>New Arrivals</h2>
-          <NewArrivals />
+          <div className="flowers-grid"><NewArrivals /></div>
         </section>
       </main>
     </div>
   );
 }
 
-// Reusable style for navbar buttons
-const navButtonStyle = {
-  padding: "8px 14px",
-  border: "none",
-  borderRadius: "6px",
-  backgroundColor: "#fff",
-  color: "#4CAF50",
-  cursor: "pointer",
-  fontWeight: "bold",
-};
+

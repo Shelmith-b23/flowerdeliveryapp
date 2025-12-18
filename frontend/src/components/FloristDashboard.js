@@ -3,6 +3,7 @@ import api from "../api/axios";
 import FlowerList from "./FlowerList";
 import MessageBox from "./MessageBox";
 import LiveTracking from "./LiveTracking";
+import './FloristDashboard.css';
 
 export default function FloristDashboard({ user }) {
   const [flowers, setFlowers] = useState([]);
@@ -100,97 +101,97 @@ export default function FloristDashboard({ user }) {
   };
 
   return (
-    <div>
-      {/* 🔐 Top bar */}
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-        }}
-      >
-        <h1>Welcome, {user.name}</h1>
-        <button
-          onClick={api.logout}
-          style={{
-            padding: "8px 14px",
-            backgroundColor: "#e74c3c",
-            color: "#fff",
-            border: "none",
-            borderRadius: "4px",
-            cursor: "pointer",
-          }}
-        >
-          Logout
-        </button>
-      </div>
+    <div className="fd-container">
+      <header className="fd-header">
+        <div>
+          <h1>Welcome, {user.name}</h1>
+          <div className="sub">Florist dashboard</div>
+        </div>
+        <div>
+          <button className="fd-logout" onClick={api.logout}>Logout</button>
+        </div>
+      </header>
 
-      {/* Flowers management */}
-      <div style={{ marginTop: 20 }}>
+      <section className="fd-section">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h2>Your Flowers</h2>
-          <div>
-            <button onClick={() => { setShowAddForm(prev => !prev); setEditing(null); }} style={{ marginRight: 8 }}>
+          <h2 style={{ margin: 0 }}>Your Flowers</h2>
+          <div className="fd-actions">
+            <button className="fd-btn primary" onClick={() => { setShowAddForm(prev => !prev); setEditing(null); }}>
               {showAddForm ? 'Hide' : 'Add Flower'}
             </button>
-            <button onClick={fetchFlowers}>Refresh</button>
+            <button className="fd-btn" onClick={fetchFlowers}>Refresh</button>
           </div>
         </div>
 
-        {opError && <div style={{ color: 'red' }}>{opError}</div>}
+        {opError && <div style={{ color: 'red', marginTop: 8 }}>{opError}</div>}
 
-        {showAddForm && (
-          <FlowerForm onSave={createFlower} onCancel={() => setShowAddForm(false)} />
+        {/* Modal for add/edit */}
+        {(showAddForm || editing) && (
+          <div className="fd-modal-overlay" onClick={() => { setShowAddForm(false); setEditing(null); }}>
+            <div className="fd-modal" onClick={(e) => e.stopPropagation()}>
+              <h3 style={{ marginTop: 0 }}>{editing ? 'Edit Flower' : 'Add Flower'}</h3>
+              <FlowerForm initial={editing} onSave={editing ? ( (id,p) => updateFlower(id,p) ) : ( p => createFlower(p) )} onCancel={() => { setShowAddForm(false); setEditing(null); }} />
+            </div>
+          </div>
         )}
 
-        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginTop: 12 }}>
+        <div className="fd-grid">
           {flowers.map(f => (
-            <div key={f.id} style={{ width: 220, border: '1px solid #ccc', borderRadius: 6, padding: 10 }}>
-              <div style={{ height: 110, marginBottom: 8, background: '#fafafa', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                {f.image_url ? <img src={f.image_url} alt={f.name} style={{ maxHeight: '100%', maxWidth: '100%', borderRadius: 6 }} /> : <span style={{ color: '#888' }}>No image</span>}
+            <div key={f.id} className="fd-card">
+              <div className="img">{f.image_url ? <img src={f.image_url} alt={f.name} /> : <span style={{ color: '#888' }}>No image</span>}</div>
+              <div className="body">
+                <div className="title">{f.name}</div>
+                <div className="desc">{f.description?.slice(0, 80)}</div>
+                <div className="price">${f.price?.toFixed ? f.price.toFixed(2) : f.price}</div>
+                <div className="actions">
+                  <button className="btn" onClick={() => { setEditing(f); setShowAddForm(false); }}>Edit</button>
+                  <button className="btn danger" onClick={() => deleteFlower(f.id)}>Delete</button>
+                </div>
+                {editing && editing.id === f.id && (
+                  <div style={{ marginTop: 12 }}>
+                    <FlowerForm initial={editing} onSave={(id, payload) => updateFlower(id, payload)} onCancel={() => setEditing(null)} />
+                  </div>
+                )}
               </div>
-              <div style={{ fontWeight: 'bold' }}>{f.name}</div>
-              <div style={{ color: '#666', fontSize: 12 }}>{f.description?.slice(0, 80)}</div>
-              <div style={{ marginTop: 8, fontWeight: 'bold' }}>${f.price?.toFixed ? f.price.toFixed(2) : f.price}</div>
-              <div style={{ marginTop: 8, display: 'flex', gap: 8 }}>
-                <button onClick={() => { setEditing(f); setShowAddForm(false); }} style={{ padding: '6px 8px' }}>Edit</button>
-                <button onClick={() => deleteFlower(f.id)} style={{ padding: '6px 8px', background: '#e74c3c', color: 'white' }}>Delete</button>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section style={{ marginTop: 20 }}>
+        <FlowerList user={user} />
+      </section>
+
+      <section style={{ marginTop: 20 }}>
+        <h2>Your Orders</h2>
+        <div className="fd-orders">
+          {orders.map((o) => (
+            <div key={o.id} className="fd-order">
+              <div className="meta">
+                <div>
+                  <div style={{ fontWeight: 700 }}>Order #{o.id}</div>
+                  <div className="status">{o.status}</div>
+                </div>
+                <div>
+                  {o.status !== 'delivered' && (
+                    <button className="deliver" onClick={() => markDelivered(o.id)}>Mark Delivered</button>
+                  )}
+                </div>
               </div>
-              {editing && editing.id === f.id && (
-                <FlowerForm initial={editing} onSave={(id, payload) => updateFlower(id, payload)} onCancel={() => setEditing(null)} />
+
+              <div style={{ marginTop: 10 }}>
+                <MessageBox orderId={o.id} userId={user.id} />
+              </div>
+
+              {o.delivery_lat && o.delivery_lng && (
+                <div style={{ marginTop: 10 }}>
+                  <LiveTracking order={o} />
+                </div>
               )}
             </div>
           ))}
         </div>
-      </div>
-
-      <FlowerList user={user} />
-
-      <h2>Your Orders</h2>
-      {orders.map((o) => (
-        <div
-          key={o.id}
-          style={{ border: "1px solid #ccc", margin: "5px", padding: "10px" }}
-        >
-          <p>
-            Order #{o.id} – <strong>{o.status}</strong>
-          </p>
-
-          <MessageBox orderId={o.id} userId={user.id} />
-
-          {o.delivery_lat && o.delivery_lng && (
-            <LiveTracking order={o} />
-          )}
-
-          {o.status !== "delivered" && (
-            <div style={{ marginTop: 8 }}>
-              <button onClick={() => markDelivered(o.id)} style={{ padding: '6px 10px', cursor: 'pointer' }}>
-                Mark Delivered
-              </button>
-            </div>
-          )}
-        </div>
-      ))}
+      </section>
     </div>
   );
 }
