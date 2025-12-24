@@ -40,6 +40,7 @@ export default function TopNav({ user, logout }) {
         {user ? (
           <>
             <button className="btn btn-ghost" onClick={() => navigate('/dashboard')}>Dashboard</button>
+            <button className="btn btn-ghost" onClick={() => navigate('/security')}>Security</button>
             {user.role === 'buyer' && (
               <>
                 <button className="btn btn-ghost" onClick={() => navigate('/orders')}>View Orders</button>

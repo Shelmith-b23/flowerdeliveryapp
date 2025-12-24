@@ -51,6 +51,16 @@ export default function App() {
     return <Categories user={user} logout={logout} />;
   }
 
+  // Security page: requires authenticated user
+  if (path === '/security') {
+    const Security = require('./pages/Security').default;
+    if (!user) {
+      // Unauthenticated users should log in
+      return <Login setUser={(u) => { setUser(u); localStorage.setItem("user", JSON.stringify(u)); }} toggleRegister={toggleRegister} />;
+    }
+    return <Security user={user} setUser={setUser} />;
+  }
+
   if (!user) {
     // If unauthenticated and visiting /dashboard, show login panel instead of dashboard
     if (path === '/dashboard') return (
