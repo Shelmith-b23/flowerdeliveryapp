@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify
 from sqlalchemy import func
 from ..models import Flower, Order, db
+from ..models import User
 
 flowers_bp = Blueprint('flowers', __name__)
 
@@ -56,6 +57,28 @@ def get_flowers_by_florist(florist_id):
         'price': float(f.price),
         'image_url': f.image_url
     } for f in flowers])
+
+
+@flowers_bp.route('/by_florist', methods=['GET'])
+def flowers_by_florist():
+    """Return a list of florists and the flowers they sell."""
+    florists = User.query.filter_by(role='florist').all()
+    results = []
+    for florist in florists:
+        flowers = Flower.query.filter_by(florist_id=florist.id).all()
+        results.append({
+            'florist_id': florist.id,
+            'florist_name': florist.name,
+            'flowers': [{
+                'id': f.id,
+                'name': f.name,
+                'description': f.description,
+                'price': float(f.price),
+                'image_url': f.image_url
+            } for f in flowers]
+        })
+
+    return jsonify(results)
 
 @flowers_bp.route('/', methods=['POST'])
 def add_flower():
