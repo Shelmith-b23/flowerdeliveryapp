@@ -1,57 +1,56 @@
 import { useState } from "react";
 import api from "../api/axios";
-import './Auth.css';
+import './Auth.css';  
 
 export default function Register({ setUser, toggleRegister }) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState("buyer");
+
+  // Florist-specific fields
+  const [shopName, setShopName] = useState("");
+  const [location, setLocation] = useState("");
+  const [contactInfo, setContactInfo] = useState("");
+
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleRegister = async (e) => {
-    // Prevent page refresh if used inside a <form>
     if (e) e.preventDefault();
     setError("");
 
-    // Basic frontend validation
-    if (!name || !email || !password) {
-      setError("Please fill in all fields.");
+    if (
+      !name ||
+      !email ||
+      !password ||
+      (role === "florist" && (!shopName || !location || !contactInfo))
+    ) {
+      setError("Please fill in all required fields.");
       return;
     }
 
     try {
       setLoading(true);
 
-      // 1️⃣ Register the user
-      await api.post("/auth/register", {
-        name,
-        email,
-        password,
-        role,
-      });
+      const payload = { name, email, password, role };
+      if (role === "florist") {
+        payload.shop_name = shopName;
+        payload.location = location;
+        payload.contact_info = contactInfo;
+      }
 
-      // 2️⃣ Automatically log them in after successful registration
-      const res = await api.post("/auth/login", {
-        email,
-        password,
-      });
+      // Register
+      await api.post("/auth/register", payload);
 
-      // 3️⃣ Destructure the token and user from our new Flask response
+      // Auto-login
+      const res = await api.post("/auth/login", { email, password });
       const { token, user } = res.data;
 
-      // 4️⃣ Save session
       localStorage.setItem("token", token);
       api.setAuthToken(token);
-
-      // 5️⃣ Update global App state
       setUser(user);
-
     } catch (err) {
-      console.error("REGISTER ERROR:", err);
-      
-      // Pull the specific error message from Flask (e.g., "Email already exists")
       const message = err.response?.data?.error || "Cannot reach server. Check backend or CORS.";
       setError(message);
     } finally {
@@ -69,17 +68,35 @@ export default function Register({ setUser, toggleRegister }) {
 
         <div className="auth-input-group">
           <label>Full Name</label>
-          <input className="auth-input" type="text" placeholder="John Doe" value={name} onChange={(e) => setName(e.target.value)} />
+          <input
+            className="auth-input"
+            type="text"
+            placeholder="John Doe"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+          />
         </div>
 
         <div className="auth-input-group">
           <label>Email Address</label>
-          <input className="auth-input" type="email" placeholder="john@example.com" value={email} onChange={(e) => setEmail(e.target.value)} />
+          <input
+            className="auth-input"
+            type="email"
+            placeholder="john@example.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
         </div>
 
         <div className="auth-input-group">
           <label>Password</label>
-          <input className="auth-input" type="password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} />
+          <input
+            className="auth-input"
+            type="password"
+            placeholder="••••••••"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
         </div>
 
         <div className="auth-input-group">
@@ -90,9 +107,51 @@ export default function Register({ setUser, toggleRegister }) {
           </select>
         </div>
 
-        <button className="auth-button" onClick={handleRegister} disabled={loading}>{loading ? "Creating Account..." : "Register"}</button>
+        {role === "florist" && (
+          <>
+            <div className="auth-input-group">
+              <label>Shop Name</label>
+              <input
+                className="auth-input"
+                type="text"
+                placeholder="My Flower Shop"
+                value={shopName}
+                onChange={(e) => setShopName(e.target.value)}
+              />
+            </div>
+            <div className="auth-input-group">
+              <label>Location</label>
+              <input
+                className="auth-input"
+                type="text"
+                placeholder="City, Address"
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
+              />
+            </div>
+            <div className="auth-input-group">
+              <label>Contact Info</label>
+              <input
+                className="auth-input"
+                type="text"
+                placeholder="Phone or WhatsApp"
+                value={contactInfo}
+                onChange={(e) => setContactInfo(e.target.value)}
+              />
+            </div>
+          </>
+        )}
 
-        <p className="auth-toggle">Already have an account? <span className="auth-link" onClick={toggleRegister}>Login here</span></p>
+        <button className="auth-button" onClick={handleRegister} disabled={loading}>
+          {loading ? "Creating Account..." : "Register"}
+        </button>
+
+        <p className="auth-toggle">
+          Already have an account?{" "}
+          <span className="auth-link" onClick={toggleRegister}>
+            Login here
+          </span>
+        </p>
       </div>
     </div>
   );

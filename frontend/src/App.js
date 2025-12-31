@@ -1,19 +1,24 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import api from "./api/axios";
 
+// Pages
+import BuyerHome from "./pages/BuyerHome";
+import FloristHome from "./pages/FloristHome";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
-import Home from "./pages/Home";
+import Categories from "./pages/Categories";
+import Dashboard from "./pages/Dashboard";
+import Security from "./pages/Security";
+import Cart from "./pages/Cart";
+import Orders from "./pages/Orders";
+import Profile from "./pages/Profile";
 
 export default function App() {
   const [user, setUser] = useState(null);
-  const [showRegister, setShowRegister] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [path, setPath] = useState(window.location.pathname);
 
-  const toggleRegister = () => setShowRegister((prev) => !prev);
-
-  // 🔐 Restore login on refresh
+  // Restore login on refresh
   useEffect(() => {
     const token = localStorage.getItem("token");
     const storedUser = localStorage.getItem("user");
@@ -26,16 +31,6 @@ export default function App() {
     setLoading(false);
   }, []);
 
-  // Keep track of location changes triggered by our navigate helper or browser navigation
-  useEffect(() => {
-    const onNav = (e) => setPath(window.location.pathname);
-    const onPop = () => setPath(window.location.pathname);
-    window.addEventListener('navigation', onNav);
-    window.addEventListener('popstate', onPop);
-    return () => { window.removeEventListener('navigation', onNav); window.removeEventListener('popstate', onPop); };
-  }, []);
-
-  // 🚪 Logout handler
   const logout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
@@ -45,43 +40,42 @@ export default function App() {
 
   if (loading) return <p>Loading...</p>;
 
-  // If the path is /categories, render Categories page (available to all users)
-  if (path === '/categories') {
-    const Categories = require('./pages/Categories').default;
-    return <Categories user={user} logout={logout} />;
-  }
+  return (
+    <BrowserRouter>
+      <Routes>
+        {/* PUBLIC */}
+        <Route path="/login" element={!user ? <Login setUser={setUser} /> : <Navigate to="/" />} />
+        <Route path="/register" element={!user ? <Register setUser={setUser} /> : <Navigate to="/" />} />
+        <Route path="/categories" element={<Categories user={user} logout={logout} />} />
 
-  // Security page: requires authenticated user
-  if (path === '/security') {
-    const Security = require('./pages/Security').default;
-    if (!user) {
-      // Unauthenticated users should log in
-      return <Login setUser={(u) => { setUser(u); localStorage.setItem("user", JSON.stringify(u)); }} toggleRegister={toggleRegister} />;
-    }
-    return <Security user={user} setUser={setUser} />;
-  }
+        {/* PROTECTED ROUTES */}
+        {user && (
+          <>
+            <Route path="/dashboard" element={<Dashboard user={user} logout={logout} />} />
+            <Route path="/security" element={<Security user={user} setUser={setUser} logout={logout} />} />
+            <Route path="/cart" element={<Cart user={user} logout={logout} />} />
+            <Route path="/orders" element={<Orders user={user} logout={logout} />} />
+            <Route path="/profile" element={<Profile user={user} logout={logout} />} />
+          </>
+        )}
 
-  if (!user) {
-    // If unauthenticated and visiting /dashboard, show login panel instead of dashboard
-    if (path === '/dashboard') return (
-      showRegister ? (
-        <Register setUser={(u) => { setUser(u); localStorage.setItem("user", JSON.stringify(u)); }} toggleRegister={toggleRegister} />
-      ) : (
-        <Login setUser={(u) => { setUser(u); localStorage.setItem("user", JSON.stringify(u)); }} toggleRegister={toggleRegister} />
-      )
-    );
+        {/* HOME ROUTE - ROLE BASED */}
+        <Route
+          path="/"
+          element={
+            !user ? (
+              <Navigate to="/login" />
+            ) : user.role === "buyer" ? (
+              <BuyerHome user={user} logout={logout} />
+            ) : (
+              <FloristHome user={user} logout={logout} />
+            )
+          }
+        />
 
-    return showRegister ? (
-      <Register setUser={(u) => { setUser(u); localStorage.setItem("user", JSON.stringify(u)); }} toggleRegister={toggleRegister} />
-    ) : (
-      <Login setUser={(u) => { setUser(u); localStorage.setItem("user", JSON.stringify(u)); }} toggleRegister={toggleRegister} />
-    );
-  }
-  // If authenticated and the path is /dashboard, render the Dashboard page. Otherwise show Home.
-  if (path === '/dashboard') {
-    const Dashboard = require('./pages/Dashboard').default;
-    return <Dashboard user={user} logout={logout} />;
-  }
-
-  return <Home user={user} setUser={setUser} logout={logout} />;
+        {/* CATCH ALL */}
+        <Route path="*" element={<Navigate to="/" />} />
+      </Routes>
+    </BrowserRouter>
+  );
 }
