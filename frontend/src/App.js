@@ -41,41 +41,39 @@ export default function App() {
   if (loading) return <p>Loading...</p>;
 
   return (
-    <BrowserRouter>
-      <Routes>
-        {/* PUBLIC */}
-        <Route path="/login" element={!user ? <Login setUser={setUser} /> : <Navigate to="/" />} />
-        <Route path="/register" element={!user ? <Register setUser={setUser} /> : <Navigate to="/" />} />
-        <Route path="/categories" element={<Categories user={user} logout={logout} />} />
+  <Routes>
+    {/* PUBLIC */}
+    <Route path="/login" element={!user ? <Login setUser={setUser} /> : <Navigate to="/" />} />
+    <Route path="/register" element={!user ? <Register setUser={setUser} /> : <Navigate to="/" />} />
+    <Route path="/categories" element={<Categories user={user} logout={logout} />} />
 
-        {/* PROTECTED ROUTES */}
-        {user && (
-          <>
-            <Route path="/dashboard" element={<Dashboard user={user} logout={logout} />} />
-            <Route path="/security" element={<Security user={user} setUser={setUser} logout={logout} />} />
-            <Route path="/cart" element={<Cart user={user} logout={logout} />} />
-            <Route path="/orders" element={<Orders user={user} logout={logout} />} />
-            <Route path="/profile" element={<Profile user={user} logout={logout} />} />
-          </>
-        )}
+    {/* PROTECTED */}
+    {user && (
+      <>
+        <Route path="/dashboard" element={<Dashboard user={user} logout={logout} />} />
+        <Route path="/security" element={<Security user={user} setUser={setUser} logout={logout} />} />
+        <Route path="/cart" element={<Cart user={user} logout={logout} />} />
+        <Route path="/orders" element={<Orders user={user} logout={logout} />} />
+        <Route path="/profile" element={<Profile user={user} logout={logout} />} />
+      </>
+    )}
 
-        {/* HOME ROUTE - ROLE BASED */}
-        <Route
-          path="/"
-          element={
-            !user ? (
-              <Navigate to="/login" />
-            ) : user.role === "buyer" ? (
-              <BuyerHome user={user} logout={logout} />
-            ) : (
-              <FloristHome user={user} logout={logout} />
-            )
-          }
-        />
+    {/* HOME (ROLE BASED) */}
+    <Route
+      path="/"
+      element={
+        !user ? (
+          <Navigate to="/login" />
+        ) : user.role === "buyer" ? (
+          <BuyerHome user={user} logout={logout} />
+        ) : (
+          <FloristHome user={user} logout={logout} />
+        )
+      }
+    />
 
-        {/* CATCH ALL */}
-        <Route path="*" element={<Navigate to="/" />} />
-      </Routes>
-    </BrowserRouter>
-  );
+    {/* FALLBACK */}
+    <Route path="*" element={<Navigate to="/" />} />
+  </Routes>
+);
 }
