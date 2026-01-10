@@ -1,8 +1,9 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import api from "../api/axios";
-import './Auth.css';  
+import "./Auth.css";
 
-export default function Login({ setUser, toggleRegister }) {
+export default function Login({ setUser }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -18,14 +19,16 @@ export default function Login({ setUser, toggleRegister }) {
     try {
       const res = await api.post("/auth/login", { email, password });
       const { token, user } = res.data;
+
       localStorage.setItem("token", token);
+      localStorage.setItem("user", JSON.stringify(user));
       api.setAuthToken(token);
       setUser(user);
     } catch (err) {
       const data = err.response?.data;
       if (data?.["2fa_required"]) {
         setTotpRequired(true);
-        setError("Two-factor code required. Enter the code from your authenticator.");
+        setError("Two-factor authentication required. Enter your code.");
       } else {
         setError(data?.error || "Invalid credentials");
       }
@@ -39,9 +42,15 @@ export default function Login({ setUser, toggleRegister }) {
     setLoading(true);
 
     try {
-      const res = await api.post("/auth/login", { email, password, totp: totpCode });
+      const res = await api.post("/auth/login", {
+        email,
+        password,
+        totp: totpCode,
+      });
+
       const { token, user } = res.data;
       localStorage.setItem("token", token);
+      localStorage.setItem("user", JSON.stringify(user));
       api.setAuthToken(token);
       setUser(user);
     } catch (err) {
@@ -89,23 +98,31 @@ export default function Login({ setUser, toggleRegister }) {
               value={totpCode}
               onChange={(e) => setTotpCode(e.target.value)}
             />
-            <button className="auth-button" onClick={submitTotp} disabled={loading}>
-              Submit 2FA
+            <button
+              className="auth-button"
+              onClick={submitTotp}
+              disabled={loading}
+            >
+              {loading ? "Verifying..." : "Submit 2FA"}
             </button>
           </div>
         )}
 
         {!totpRequired && (
-          <button className="auth-button" onClick={handleLogin} disabled={loading}>
+          <button
+            className="auth-button"
+            onClick={handleLogin}
+            disabled={loading}
+          >
             {loading ? "Signing in..." : "Login"}
           </button>
         )}
 
         <p className="auth-toggle">
           Don't have an account?{" "}
-          <span className="auth-link" onClick={toggleRegister}>
+          <Link to="/register" className="auth-link">
             Register
-          </span>
+          </Link>
         </p>
       </div>
     </div>

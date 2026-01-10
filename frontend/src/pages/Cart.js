@@ -1,33 +1,47 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import api from "../api/axios";
 
 export default function Cart({ user, logout }) {
   const [cartItems, setCartItems] = useState([]);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
+  // Load cart from localStorage
   useEffect(() => {
-    // Fetch cart items for the logged-in buyer
-    const fetchCart = async () => {
-      try {
-        const res = await api.get(`/cart/buyer/${user.id}`);
-        setCartItems(res.data);
-      } catch (err) {
-        console.error("Failed to fetch cart", err);
-      } finally {
-        setLoading(false);
-      }
-    };
+    const cart = JSON.parse(localStorage.getItem("cart") || "[]");
+    setCartItems(cart);
+    setLoading(false);
+  }, []);
 
-    fetchCart();
-  }, [user.id]);
+  // Update cart in localStorage and trigger TopNav update
+  const updateCart = (newCart) => {
+    setCartItems(newCart);
+    localStorage.setItem("cart", JSON.stringify(newCart));
+    window.dispatchEvent(new Event("storage"));
+  };
+
+  const handleQuantityChange = (id, delta) => {
+    const newCart = cartItems.map(item => {
+      if (item.id === id) {
+        return { ...item, quantity: Math.max(1, item.quantity + delta) };
+      }
+      return item;
+    });
+    updateCart(newCart);
+  };
+
+  const handleRemove = (id) => {
+    const newCart = cartItems.filter(item => item.id !== id);
+    updateCart(newCart);
+  };
 
   const handleCheckout = async () => {
     if (cartItems.length === 0) {
-      alert("Your cart is empty!");
-      return;
+      alert("Your cart is empty! Redirecting to home page...");
+      return navigate("/");
     }
 
-    // Prompt buyer for delivery details
     const address = prompt("Enter delivery address:", "");
     if (!address) return alert("Checkout cancelled: address required.");
 
@@ -37,10 +51,8 @@ export default function Cart({ user, logout }) {
     const paymentMethod = prompt("Choose payment method (M-Pesa / Card):", "M-Pesa");
     if (!paymentMethod) return alert("Checkout cancelled: payment method required.");
 
-    // Confirm order summary
     const confirmMsg = `Confirm your order:\nItems: ${cartItems.length}\nDelivery: ${date}\nPayment: ${paymentMethod}\nAddress: ${address}`;
-    const confirmed = window.confirm(confirmMsg);
-    if (!confirmed) return;
+    if (!window.confirm(confirmMsg)) return;
 
     try {
       await api.post(`/orders/buyer/${user.id}/checkout`, {
@@ -51,7 +63,8 @@ export default function Cart({ user, logout }) {
       });
 
       alert("Order placed successfully!");
-      setCartItems([]); // Clear cart after checkout
+      updateCart([]); // Clear cart after checkout
+      navigate("/"); // Redirect to home
     } catch (err) {
       console.error(err);
       alert("Failed to place order. Try again.");
@@ -68,12 +81,19 @@ export default function Cart({ user, logout }) {
       ) : (
         <ul>
           {cartItems.map((item) => (
-            <li key={item.id}>
-              {item.flower_name} - Qty: {item.quantity} - ${item.price.toFixed(2)}
+            <li key={item.id} style={{ marginBottom: 12 }}>
+              <strong>{item.flower_name}</strong> - KES {item.price} × {item.quantity}
+              <div style={{ marginTop: 4 }}>
+                <button onClick={() => handleQuantityChange(item.id, 1)}>+</button>
+                <button onClick={() => handleQuantityChange(item.id, -1)}>-</button>
+                <button onClick={() => handleRemove(item.id)} style={{ marginLeft: 8, color: "red" }}>Remove</button>
+              </div>
             </li>
           ))}
         </ul>
       )}
+
+      <h3>Total: KES {cartItems.reduce((sum, i) => sum + i.price * i.quantity, 0)}</h3>
 
       <button
         onClick={handleCheckout}

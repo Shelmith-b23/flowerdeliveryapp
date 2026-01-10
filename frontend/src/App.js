@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from "react";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Routes, Route, Navigate } from "react-router-dom";
 import api from "./api/axios";
 
 // Pages
@@ -11,6 +11,7 @@ import Categories from "./pages/Categories";
 import Dashboard from "./pages/Dashboard";
 import Security from "./pages/Security";
 import Cart from "./pages/Cart";
+import Checkout from "./pages/Checkout";
 import Orders from "./pages/Orders";
 import Profile from "./pages/Profile";
 
@@ -18,7 +19,6 @@ export default function App() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Restore login on refresh
   useEffect(() => {
     const token = localStorage.getItem("token");
     const storedUser = localStorage.getItem("user");
@@ -41,39 +41,69 @@ export default function App() {
   if (loading) return <p>Loading...</p>;
 
   return (
-  <Routes>
-    {/* PUBLIC */}
-    <Route path="/login" element={!user ? <Login setUser={setUser} /> : <Navigate to="/" />} />
-    <Route path="/register" element={!user ? <Register setUser={setUser} /> : <Navigate to="/" />} />
-    <Route path="/categories" element={<Categories user={user} logout={logout} />} />
+    <Routes>
+      {/* PUBLIC */}
+      <Route
+        path="/login"
+        element={!user ? <Login setUser={setUser} /> : <Navigate to="/" />}
+      />
+      <Route
+        path="/register"
+        element={!user ? <Register setUser={setUser} /> : <Navigate to="/" />}
+      />
 
-    {/* PROTECTED */}
-    {user && (
-      <>
-        <Route path="/dashboard" element={<Dashboard user={user} logout={logout} />} />
-        <Route path="/security" element={<Security user={user} setUser={setUser} logout={logout} />} />
-        <Route path="/cart" element={<Cart user={user} logout={logout} />} />
-        <Route path="/orders" element={<Orders user={user} logout={logout} />} />
-        <Route path="/profile" element={<Profile user={user} logout={logout} />} />
-      </>
-    )}
+      {/* BUYER PUBLIC */}
+      <Route
+        path="/categories"
+        element={<Categories user={user} logout={logout} />}
+      />
 
-    {/* HOME (ROLE BASED) */}
-    <Route
-      path="/"
-      element={
-        !user ? (
-          <Navigate to="/login" />
-        ) : user.role === "buyer" ? (
-          <BuyerHome user={user} logout={logout} />
-        ) : (
-          <FloristHome user={user} logout={logout} />
-        )
-      }
-    />
+      {/* PROTECTED */}
+      {user && (
+        <>
+          <Route
+            path="/dashboard"
+            element={<Dashboard user={user} logout={logout} />}
+          />
+          <Route
+            path="/security"
+            element={<Security user={user} setUser={setUser} logout={logout} />}
+          />
+          <Route
+            path="/cart"
+            element={<Cart user={user} logout={logout} />}
+          />
+          <Route
+            path="/checkout"
+            element={<Checkout user={user} logout={logout} />}
+          />
+          <Route
+            path="/orders"
+            element={<Orders user={user} logout={logout} />}
+          />
+          <Route
+            path="/profile"
+            element={<Profile user={user} logout={logout} />}
+          />
+        </>
+      )}
 
-    {/* FALLBACK */}
-    <Route path="*" element={<Navigate to="/" />} />
-  </Routes>
-);
+      {/* HOME (ROLE BASED) */}
+      <Route
+        path="/"
+        element={
+          !user ? (
+            <Navigate to="/login" />
+          ) : user.role === "buyer" ? (
+            <BuyerHome user={user} logout={logout} />
+          ) : (
+            <FloristHome user={user} logout={logout} />
+          )
+        }
+      />
+
+      {/* FALLBACK */}
+      <Route path="*" element={<Navigate to="/" />} />
+    </Routes>
+  );
 }

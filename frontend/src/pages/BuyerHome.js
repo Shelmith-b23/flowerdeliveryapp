@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import TopNav from "../components/TopNav";
+import './Home.css';
 
 export default function BuyerHome({ user, logout }) {
   const navigate = useNavigate();
