@@ -1,21 +1,30 @@
-# backend/app/config.py
 import os
 from pathlib import Path
 from dotenv import load_dotenv
 
-# Load .env from the backend root (if present)
+# Load .env from backend root
 basedir = Path(__file__).resolve().parents[1]
-envfile = basedir / '.env'
+envfile = basedir / ".env"
 if envfile.exists():
     load_dotenv(envfile)
 
 class Config:
-    SECRET_KEY = os.environ.get('SECRET_KEY', 'supersecretkey')
+    SECRET_KEY = os.environ.get("SECRET_KEY", "supersecretkey")
 
-    # 🔹 Use SQLite by default for local dev, override with DATABASE_URL for production
+    # ✅ SQLite by default (SAFE)
     SQLALCHEMY_DATABASE_URI = os.environ.get(
-        'DATABASE_URL',
-        'sqlite:///' + str(basedir / 'flower_delivery.db')
+        "DATABASE_URL",
+        f"sqlite:///{basedir / 'flower_delivery.db'}"
     )
 
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+
+    # ✅ MAIL SETTINGS
+    MAIL_SERVER = "smtp.gmail.com"
+    MAIL_PORT = 587
+    MAIL_USE_TLS = True
+    MAIL_USERNAME = os.environ.get("MAIL_USERNAME")
+    MAIL_PASSWORD = os.environ.get("MAIL_PASSWORD")
+    MAIL_DEFAULT_SENDER = "Flower Delivery <no-reply@flowerdelivery.com>"
+    MAIL_SUPPRESS_SEND = False
+    MAIL_DEBUG = False
