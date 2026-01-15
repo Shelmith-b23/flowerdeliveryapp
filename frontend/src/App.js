@@ -1,24 +1,31 @@
-import { useEffect, useState } from "react";
-import { Routes, Route, Navigate } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import api from "./api/axios";
 
+// ✅ Context (NAMED import – VERY IMPORTANT)
+import { CartProvider } from "./context/CartContext";
+
 // Pages
-import BuyerHome from "./pages/BuyerHome";
-import FloristHome from "./pages/FloristHome";
+import Landing from "./pages/Landing";
+import BrowseFlowers from "./pages/BrowseFlowers";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
-import Categories from "./pages/Categories";
-import Dashboard from "./pages/Dashboard";
-import Security from "./pages/Security";
-import Cart from "./pages/Cart";
 import Checkout from "./pages/Checkout";
-import Orders from "./pages/Orders";
-import Profile from "./pages/Profile";
+import PaymentCallback from "./pages/PaymentCallback";
+import FlowerDetails from "./pages/FlowerDetails";
+import FloristFlowerManagement from "./pages/FloristFlowerManagement";
 
-export default function App() {
+// Dashboards
+import BuyerDashboard from "./components/BuyerDashboard";
+import FloristDashboard from "./components/FloristDashboard";
+
+function App() {
   const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loadingUser, setLoadingUser] = useState(true);
 
+  // -----------------------------
+  // Load logged-in user on refresh
+  // -----------------------------
   useEffect(() => {
     const token = localStorage.getItem("token");
     const storedUser = localStorage.getItem("user");
@@ -28,82 +35,83 @@ export default function App() {
       setUser(JSON.parse(storedUser));
     }
 
-    setLoading(false);
+    setLoadingUser(false);
   }, []);
 
-  const logout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    api.setAuthToken(null);
-    setUser(null);
-  };
-
-  if (loading) return <p>Loading...</p>;
+  if (loadingUser) {
+    return <div style={{ padding: "2rem" }}>Loading app...</div>;
+  }
 
   return (
-    <Routes>
-      {/* PUBLIC */}
-      <Route
-        path="/login"
-        element={!user ? <Login setUser={setUser} /> : <Navigate to="/" />}
-      />
-      <Route
-        path="/register"
-        element={!user ? <Register setUser={setUser} /> : <Navigate to="/" />}
-      />
+    <CartProvider>
+      <BrowserRouter>
+        <Routes>
+          {/* Public routes */}
+          <Route path="/" element={<Landing />} />
+          <Route path="/browse" element={<BrowseFlowers />} />
+          <Route path="/login" element={<Login setUser={setUser} />} />
+          <Route path="/register" element={<Register setUser={setUser} />} />
+          <Route path="/flower-details/:flowerId" element={<FlowerDetails />} />
 
-      {/* BUYER PUBLIC */}
-      <Route
-        path="/categories"
-        element={<Categories user={user} logout={logout} />}
-      />
+          {/* Buyer routes */}
+          <Route
+            path="/buyer-dashboard"
+            element={
+              <ProtectedRoute user={user} role="buyer">
+                <BuyerDashboard user={user} />
+              </ProtectedRoute>
+            }
+          />
 
-      {/* PROTECTED */}
-      {user && (
-        <>
-          <Route
-            path="/dashboard"
-            element={<Dashboard user={user} logout={logout} />}
-          />
-          <Route
-            path="/security"
-            element={<Security user={user} setUser={setUser} logout={logout} />}
-          />
-          <Route
-            path="/cart"
-            element={<Cart user={user} logout={logout} />}
-          />
           <Route
             path="/checkout"
-            element={<Checkout user={user} logout={logout} />}
+            element={
+              <ProtectedRoute user={user} role="buyer">
+                <Checkout user={user} />
+              </ProtectedRoute>
+            }
           />
-          <Route
-            path="/orders"
-            element={<Orders user={user} logout={logout} />}
-          />
-          <Route
-            path="/profile"
-            element={<Profile user={user} logout={logout} />}
-          />
-        </>
-      )}
 
-      {/* HOME (ROLE BASED) */}
-      <Route
-        path="/"
-        element={
-          !user ? (
-            <Navigate to="/login" />
-          ) : user.role === "buyer" ? (
-            <BuyerHome user={user} logout={logout} />
-          ) : (
-            <FloristHome user={user} logout={logout} />
-          )
-        }
-      />
+          <Route
+            path="/payment-callback"
+            element={<PaymentCallback />}
+          />
 
-      {/* FALLBACK */}
-      <Route path="*" element={<Navigate to="/" />} />
-    </Routes>
+          {/* Florist routes */}
+          <Route
+            path="/florist-dashboard"
+            element={
+              <ProtectedRoute user={user} role="florist">
+                <FloristDashboard user={user} />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/florist/manage-flowers"
+            element={
+              <ProtectedRoute user={user} role="florist">
+                <FloristFlowerManagement />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Fallback */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </BrowserRouter>
+    </CartProvider>
   );
 }
+
+/* ---------------------------------
+   Protected Route Component
+---------------------------------- */
+function ProtectedRoute({ user, role, children }) {
+  if (!user) return <Navigate to="/login" replace />;
+  if (role && user.role !== role) return <Navigate to="/" replace />;
+  return children;
+}
+
+export default App;
+

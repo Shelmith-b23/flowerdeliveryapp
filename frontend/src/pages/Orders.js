@@ -1,45 +1,36 @@
-import { useParams, Link } from "react-router-dom";
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import api from "../api/axios";
 
-export default function OrderConfirmation() {
-  const { orderId } = useParams();
-  const [order, setOrder] = useState(null);
-  const [loading, setLoading] = useState(true);
+export default function Orders() {
+  const [orders, setOrders] = useState([]);
 
   useEffect(() => {
-    api.get(`/orders/${orderId}`)
-      .then(res => setOrder(res.data))
-      .finally(() => setLoading(false));
-  }, [orderId]);
+    const fetchOrders = async () => {
+      try {
+        const res = await api.get("/orders"); // Your API endpoint for buyer orders
+        setOrders(res.data.orders);
+      } catch (err) {
+        console.error("Error fetching orders:", err);
+      }
+    };
 
-  if (loading) return <p>Loading order...</p>;
-  if (!order) return <p>Order not found</p>;
+    fetchOrders();
+  }, []);
 
   return (
-    <div className="order-confirmation">
-      <h1>Order Confirmed 🎉</h1>
-      <p><strong>Order Number:</strong> #{order.id}</p>
-
-      <h3>Items Ordered</h3>
-      <ul>
-        {order.items.map(item => (
-          <li key={item.id}>
-            {item.name} × {item.quantity} — KES {item.price}
-          </li>
-        ))}
-      </ul>
-
-      <h3>Total: KES {order.total}</h3>
-
-      <div className="order-actions">
-        <Link to="/orders" className="btn">
-          View Orders
-        </Link>
-        <Link to="/" className="btn btn-secondary">
-          Back Home
-        </Link>
-      </div>
+    <div style={{ padding: "2rem" }}>
+      <h2>My Orders</h2>
+      {orders.length === 0 ? (
+        <p>No orders yet.</p>
+      ) : (
+        <ul>
+          {orders.map(o => (
+            <li key={o.id}>
+              {o.flower_name} x {o.quantity} - Status: {o.status}
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }

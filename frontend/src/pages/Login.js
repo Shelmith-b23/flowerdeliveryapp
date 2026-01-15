@@ -1,21 +1,18 @@
+// src/pages/Login.js
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import api from "../api/axios";
-import "./Auth.css";
 
 export default function Login({ setUser }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-  const [totpRequired, setTotpRequired] = useState(false);
-  const [totpCode, setTotpCode] = useState("");
   const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
   const handleLogin = async () => {
     setError("");
-    setTotpRequired(false);
     setLoading(true);
-
     try {
       const res = await api.post("/auth/login", { email, password });
       const { token, user } = res.data;
@@ -24,37 +21,13 @@ export default function Login({ setUser }) {
       localStorage.setItem("user", JSON.stringify(user));
       api.setAuthToken(token);
       setUser(user);
+
+      // Redirect based on role
+      if (user.role === "buyer") navigate("/buyer-dashboard");
+      else if (user.role === "florist") navigate("/florist-dashboard");
     } catch (err) {
-      const data = err.response?.data;
-      if (data?.["2fa_required"]) {
-        setTotpRequired(true);
-        setError("Two-factor authentication required. Enter your code.");
-      } else {
-        setError(data?.error || "Invalid credentials");
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const submitTotp = async () => {
-    setError("");
-    setLoading(true);
-
-    try {
-      const res = await api.post("/auth/login", {
-        email,
-        password,
-        totp: totpCode,
-      });
-
-      const { token, user } = res.data;
-      localStorage.setItem("token", token);
-      localStorage.setItem("user", JSON.stringify(user));
-      api.setAuthToken(token);
-      setUser(user);
-    } catch (err) {
-      setError(err.response?.data?.error || "Invalid 2FA code");
+      console.error("Login error:", err);
+      setError(err.response?.data?.error || "Login failed");
     } finally {
       setLoading(false);
     }
@@ -63,66 +36,34 @@ export default function Login({ setUser }) {
   return (
     <div className="auth-container">
       <div className="auth-card">
-        <h2 className="auth-title">Login</h2>
-
+        <h2>Login</h2>
         {error && <div className="auth-error">{error}</div>}
 
-        <div className="auth-input-group">
-          <label>Email Address</label>
-          <input
-            className="auth-input"
-            type="email"
-            placeholder="john@example.com"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
-        </div>
+        <input
+          placeholder="Email"
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          className="auth-input"
+        />
+        <input
+          placeholder="Password"
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          className="auth-input"
+        />
 
-        <div className="auth-input-group">
-          <label>Password</label>
-          <input
-            className="auth-input"
-            type="password"
-            placeholder="••••••••"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
-        </div>
+        <button
+          className="auth-button"
+          onClick={handleLogin}
+          disabled={loading}
+        >
+          {loading ? "Logging in..." : "Login"}
+        </button>
 
-        {totpRequired && (
-          <div className="auth-input-group">
-            <label>2FA Code</label>
-            <input
-              className="auth-input"
-              placeholder="123456"
-              value={totpCode}
-              onChange={(e) => setTotpCode(e.target.value)}
-            />
-            <button
-              className="auth-button"
-              onClick={submitTotp}
-              disabled={loading}
-            >
-              {loading ? "Verifying..." : "Submit 2FA"}
-            </button>
-          </div>
-        )}
-
-        {!totpRequired && (
-          <button
-            className="auth-button"
-            onClick={handleLogin}
-            disabled={loading}
-          >
-            {loading ? "Signing in..." : "Login"}
-          </button>
-        )}
-
-        <p className="auth-toggle">
-          Don't have an account?{" "}
-          <Link to="/register" className="auth-link">
-            Register
-          </Link>
+        <p>
+          Don't have an account? <Link to="/register">Register</Link>
         </p>
       </div>
     </div>

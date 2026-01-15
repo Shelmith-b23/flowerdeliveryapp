@@ -1,9 +1,0 @@
-/* Styles for BuyerDashboard to match site theme */
-.bdb-container{max-width:1100px;margin:24px auto;padding:20px}
-.bdb-header{display:flex;justify-content:space-between;align-items:center;gap:12px}
-.bdb-header h1{margin:0;font-size:22px}
-.bdb-logout{padding:8px 14px;background:var(--danger);color:#fff;border:none;border-radius:6px;cursor:pointer}
-.bdb-orders{margin-top:18px}
-.bdb-order{border-radius:8px;padding:12px;background:var(--card);box-shadow:0 4px 12px rgba(2,6,23,0.04);margin-bottom:10px}
-.bdb-order .meta{display:flex;justify-content:space-between;align-items:center}
-.bdb-order .status{color:var(--muted)}

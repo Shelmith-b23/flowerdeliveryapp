@@ -1,7 +1,8 @@
+// src/pages/Register.js
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import api from "../api/axios";
-import "./Auth.css";
+
 
 export default function Register({ setUser }) {
   const [name, setName] = useState("");
@@ -10,25 +11,27 @@ export default function Register({ setUser }) {
   const [role, setRole] = useState("buyer");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
   const handleRegister = async () => {
     setError("");
     setLoading(true);
 
     try {
-      const res = await api.post("/auth/register", {
-        name,
-        email,
-        password,
-        role,
-      });
+      await api.post("/auth/register", { name, email, password, role });
 
+      // Auto-login after registration
+      const res = await api.post("/auth/login", { email, password });
       const { token, user } = res.data;
 
       localStorage.setItem("token", token);
       localStorage.setItem("user", JSON.stringify(user));
       api.setAuthToken(token);
       setUser(user);
+
+      // Redirect based on role
+      if (user.role === "buyer") navigate("/buyer-dashboard");
+      else if (user.role === "florist") navigate("/florist-dashboard");
     } catch (err) {
       setError(err.response?.data?.error || "Registration failed");
     } finally {
@@ -39,53 +42,38 @@ export default function Register({ setUser }) {
   return (
     <div className="auth-container">
       <div className="auth-card">
-        <h2 className="auth-title">Register</h2>
-
+        <h2>Register</h2>
         {error && <div className="auth-error">{error}</div>}
 
-        <div className="auth-input-group">
-          <label>Full Name</label>
-          <input
-            className="auth-input"
-            placeholder="Jane Doe"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-          />
-        </div>
+        <input
+          placeholder="Full Name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          className="auth-input"
+        />
+        <input
+          placeholder="Email"
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          className="auth-input"
+        />
+        <input
+          placeholder="Password"
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          className="auth-input"
+        />
 
-        <div className="auth-input-group">
-          <label>Email Address</label>
-          <input
-            className="auth-input"
-            type="email"
-            placeholder="jane@example.com"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
-        </div>
-
-        <div className="auth-input-group">
-          <label>Password</label>
-          <input
-            className="auth-input"
-            type="password"
-            placeholder="••••••••"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
-        </div>
-
-        <div className="auth-input-group">
-          <label>Account Type</label>
-          <select
-            className="auth-input"
-            value={role}
-            onChange={(e) => setRole(e.target.value)}
-          >
-            <option value="buyer">Buyer</option>
-            <option value="florist">Florist</option>
-          </select>
-        </div>
+        <select
+          value={role}
+          onChange={(e) => setRole(e.target.value)}
+          className="auth-input"
+        >
+          <option value="buyer">Buyer</option>
+          <option value="florist">Florist</option>
+        </select>
 
         <button
           className="auth-button"
@@ -95,14 +83,10 @@ export default function Register({ setUser }) {
           {loading ? "Creating account..." : "Register"}
         </button>
 
-        <p className="auth-toggle">
-          Already have an account?{" "}
-          <Link to="/login" className="auth-link">
-            Login
-          </Link>
+        <p>
+          Already have an account? <Link to="/login">Login</Link>
         </p>
       </div>
     </div>
   );
 }
-
