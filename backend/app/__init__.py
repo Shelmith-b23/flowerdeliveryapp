@@ -4,6 +4,7 @@ from flask_migrate import Migrate
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 from .config import Config
+import os
 
 # Initialize extensions here, **but don't import models yet**
 db = SQLAlchemy()
@@ -11,8 +12,11 @@ migrate = Migrate()
 jwt = JWTManager()
 
 def create_app():
-    app = Flask(__name__)
+    app = Flask(__name__, static_folder='static', static_url_path='/static')
     app.config.from_object(Config)
+
+    # Create upload folder if it doesn't exist
+    os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
     # Initialize extensions
     db.init_app(app)

@@ -9,5 +9,6 @@ class Config:
     SQLALCHEMY_DATABASE_URI = "sqlite:///" + os.path.join(basedir, "../instance/flowerdb.db")
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     JWT_SECRET_KEY = "your_jwt_secret_key_here"
-    CORS_ORIGINS = ["http://localhost:3000"]
-    
+    CORS_ORIGINS = ["http://localhost:3000"]    # File upload folder
+    UPLOAD_FOLDER = os.path.join(basedir, "static", "uploads")
+    MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB max file size    

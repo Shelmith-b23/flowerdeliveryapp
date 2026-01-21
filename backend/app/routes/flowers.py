@@ -1,21 +1,54 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, current_app
 from flask_jwt_extended import jwt_required, get_jwt_identity
+from werkzeug.utils import secure_filename
+import os
 from app.models import db, Flower, User
 
-flowers_bp = Blueprint("flowers", __name__, url_prefix="/api/flowers")
+flowers_bp = Blueprint("flowers", __name__)
 
-# Florist adds flower
+# Allowed image extensions
+ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "gif"}
+
+def allowed_file(filename):
+    return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
+
+
+# Florist adds a flower
 @flowers_bp.route("", methods=["POST"])
 @jwt_required()
 def add_flower():
     florist_id = get_jwt_identity()
 
+    # Get form data
+    name = request.form.get("name")
+    price = request.form.get("price")
+    description = request.form.get("description")
+    stock_status = request.form.get("stock_status", "in_stock")
+
+    # Handle image: either file upload or URL
+    file = request.files.get("image_file")
+    image_url = request.form.get("image_url")  # optional
+
+    saved_image_path = None
+
+    if file and allowed_file(file.filename):
+        filename = secure_filename(file.filename)
+        upload_folder = current_app.config["UPLOAD_FOLDER"]
+        file.save(os.path.join(upload_folder, filename))
+        # Save relative path so frontend can access via /static/uploads/filename
+        saved_image_path = f"/static/uploads/{filename}"
+    elif image_url:
+        saved_image_path = image_url
+    else:
+        return jsonify({"error": "No image provided"}), 400
+
+    # Create flower
     flower = Flower(
-        name=request.json["name"],
-        price=request.json["price"],
-        image_url=request.json.get("image_url"),
-        description=request.json.get("description"),
-        stock_status=request.json.get("stock_status", "in_stock"),
+        name=name,
+        price=price,
+        image_url=saved_image_path,
+        description=description,
+        stock_status=stock_status,
         florist_id=florist_id
     )
 
@@ -27,7 +60,8 @@ def add_flower():
         "id": flower.id,
         "name": flower.name,
         "price": flower.price,
-        "stock_status": flower.stock_status
+        "stock_status": flower.stock_status,
+        "image_url": flower.image_url
     }), 201
 
 
@@ -58,31 +92,6 @@ def get_flowers():
     return jsonify(results), 200
 
 
-# Get single flower details
-@flowers_bp.route("/<int:flower_id>", methods=["GET"])
-def get_flower(flower_id):
-    flower = Flower.query.get(flower_id)
-    if not flower:
-        return jsonify({"error": "Flower not found"}), 404
-
-    florist = User.query.get(flower.florist_id)
-    return jsonify({
-        "id": flower.id,
-        "name": flower.name,
-        "price": flower.price,
-        "image_url": flower.image_url,
-        "description": flower.description,
-        "stock_status": flower.stock_status,
-        "florist_id": flower.florist_id,
-        "florist": {
-            "id": florist.id,
-            "name": florist.name,
-            "shop_name": florist.shop_name
-        } if florist else None,
-        "created_at": flower.created_at.isoformat()
-    }), 200
-
-
 # Get florist's flowers
 @flowers_bp.route("/florist/my-flowers", methods=["GET"])
 @jwt_required()
@@ -104,7 +113,7 @@ def get_florist_flowers():
     return jsonify(results), 200
 
 
-# Update flower (edit)
+# Update flower
 @flowers_bp.route("/<int:flower_id>", methods=["PUT"])
 @jwt_required()
 def update_flower(flower_id):
@@ -116,21 +125,34 @@ def update_flower(flower_id):
     
     if flower.florist_id != florist_id:
         return jsonify({"error": "Unauthorized"}), 403
-    
-    flower.name = request.json.get("name", flower.name)
-    flower.price = request.json.get("price", flower.price)
-    flower.image_url = request.json.get("image_url", flower.image_url)
-    flower.description = request.json.get("description", flower.description)
-    flower.stock_status = request.json.get("stock_status", flower.stock_status)
-    
+
+    # Update fields
+    flower.name = request.form.get("name", flower.name)
+    flower.price = request.form.get("price", flower.price)
+    flower.description = request.form.get("description", flower.description)
+    flower.stock_status = request.form.get("stock_status", flower.stock_status)
+
+    # Handle image update
+    file = request.files.get("image_file")
+    image_url = request.form.get("image_url")
+
+    if file and allowed_file(file.filename):
+        filename = secure_filename(file.filename)
+        upload_folder = current_app.config["UPLOAD_FOLDER"]
+        file.save(os.path.join(upload_folder, filename))
+        flower.image_url = f"/static/uploads/{filename}"
+    elif image_url:
+        flower.image_url = image_url
+
     db.session.commit()
-    
+
     return jsonify({
         "message": "Flower updated",
         "id": flower.id,
         "name": flower.name,
         "price": flower.price,
-        "stock_status": flower.stock_status
+        "stock_status": flower.stock_status,
+        "image_url": flower.image_url
     }), 200
 
 
