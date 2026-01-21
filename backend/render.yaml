@@ -3,7 +3,7 @@ services:
     name: flower-delivery-api
     env: python
     plan: free
-    buildCommand: pip install -q -r requirements.txt && python -m flask db upgrade
+    buildCommand: pip install -q -r requirements.txt
     startCommand: gunicorn app:app
     envVars:
       - key: FLASK_ENV
