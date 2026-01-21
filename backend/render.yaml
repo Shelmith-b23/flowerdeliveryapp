@@ -2,11 +2,8 @@ services:
   - type: web
     name: flower-delivery-api
     env: python
-    envVars:
-      - key: PYTHON_VERSION
-        value: "3.11.8"
     plan: free
-    buildCommand: pip install --upgrade pip setuptools wheel && pip install --only-binary :all: -r requirements.txt && flask db upgrade
+    buildCommand: pip cache purge && pip install --no-cache-dir --no-build-isolation --disable-pip-version-check -r requirements.txt && flask db upgrade
     startCommand: gunicorn app:app
     envVars:
       - key: FLASK_ENV
