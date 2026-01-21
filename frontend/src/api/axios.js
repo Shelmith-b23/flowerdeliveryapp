@@ -14,8 +14,18 @@ async function request(method, url, data = null, opts = {}) {
   const headers = { ...defaultHeaders, ...globalHeaders, ...(opts.headers || {}) };
   const fetchOpts = { method, headers };
 
-  if (data != null && method !== "GET") {
+  // Handle FormData (for file uploads)
+  if (data instanceof FormData) {
+    // Remove Content-Type header so browser can set it with boundary
+    delete headers["Content-Type"];
+    fetchOpts.body = data;
+  } else if (data != null && method !== "GET") {
     fetchOpts.body = JSON.stringify(data);
+  }
+
+  // Debug: Log headers for form data requests
+  if (data instanceof FormData) {
+    console.log("FormData request headers:", headers);
   }
 
   if (opts.withCredentials) {

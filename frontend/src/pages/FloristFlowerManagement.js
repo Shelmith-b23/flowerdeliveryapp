@@ -11,9 +11,10 @@ export default function FloristFlowerManagement() {
     name: "",
     price: "",
     description: "",
-    image_url: "",
+    image_file: null,
     stock_status: "in_stock"
   });
+  const [imagePreview, setImagePreview] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
@@ -41,9 +42,10 @@ export default function FloristFlowerManagement() {
       name: "",
       price: "",
       description: "",
-      image_url: "",
+      image_file: null,
       stock_status: "in_stock"
     });
+    setImagePreview("");
     setShowForm(true);
     setError("");
   };
@@ -54,9 +56,11 @@ export default function FloristFlowerManagement() {
       name: flower.name,
       price: flower.price,
       description: flower.description,
-      image_url: flower.image_url,
+      image_file: null,
       stock_status: flower.stock_status
     });
+    // Show the existing image as preview
+    setImagePreview(flower.image_url);
     setShowForm(true);
     setError("");
   };
@@ -68,9 +72,10 @@ export default function FloristFlowerManagement() {
       name: "",
       price: "",
       description: "",
-      image_url: "",
+      image_file: null,
       stock_status: "in_stock"
     });
+    setImagePreview("");
   };
 
   const handleInputChange = (e) => {
@@ -79,6 +84,22 @@ export default function FloristFlowerManagement() {
       ...prev,
       [name]: value
     }));
+  };
+
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setFormData(prev => ({
+        ...prev,
+        image_file: file
+      }));
+      // Create preview
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -91,14 +112,38 @@ export default function FloristFlowerManagement() {
       return;
     }
 
+    if (!formData.image_file && !imagePreview) {
+      setError("Image is required");
+      return;
+    }
+
+    // Debug: Check if token exists
+    const token = localStorage.getItem("token");
+    if (!token) {
+      setError("Authentication token not found. Please log in again.");
+      return;
+    }
+
     try {
+      // Create FormData for file upload
+      const submitData = new FormData();
+      submitData.append("name", formData.name);
+      submitData.append("price", formData.price);
+      submitData.append("description", formData.description);
+      submitData.append("stock_status", formData.stock_status);
+      
+      // Only append image_file if a new file was selected
+      if (formData.image_file) {
+        submitData.append("image_file", formData.image_file);
+      }
+
       if (editingId) {
         // Update existing flower
-        await api.put(`/flowers/${editingId}`, formData);
+        await api.put(`/flowers/${editingId}`, submitData);
         setSuccess("Flower updated successfully");
       } else {
         // Add new flower
-        await api.post("/flowers", formData);
+        await api.post("/flowers", submitData);
         setSuccess("Flower added successfully");
       }
       
@@ -212,19 +257,21 @@ export default function FloristFlowerManagement() {
               </div>
 
               <div className="form-group">
-                <label>Image URL</label>
+                <label>Flower Image *</label>
                 <input
-                  type="text"
-                  name="image_url"
-                  value={formData.image_url}
-                  onChange={handleInputChange}
-                  placeholder="https://example.com/flower.jpg"
+                  type="file"
+                  name="image_file"
+                  onChange={handleImageChange}
+                  accept="image/*"
+                  required={!imagePreview}
                 />
+                <p className="file-input-hint">Choose from gallery (PNG, JPG, JPEG, GIF)</p>
               </div>
 
-              {formData.image_url && (
+              {imagePreview && (
                 <div className="image-preview">
-                  <img src={formData.image_url} alt="Preview" onError={(e) => e.target.src = "https://via.placeholder.com/100?text=Error"} />
+                  <p className="preview-label">Image Preview:</p>
+                  <img src={imagePreview} alt="Preview" onError={(e) => e.target.src = "https://via.placeholder.com/100?text=Error"} />
                 </div>
               )}
 

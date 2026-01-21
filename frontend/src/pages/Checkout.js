@@ -143,22 +143,6 @@ export default function Checkout({ user }) {
     checkStatus();
   };
 
-  const handleMarkAsPaid = async () => {
-    if (!orderCreated) return;
-
-    setLoading(true);
-    try {
-      await api.post(`/orders/${orderCreated.order_id}/pay`);
-      alert("✅ Payment confirmed! Your order is now being processed.");
-      setTimeout(() => navigate("/orders"), 2000);
-    } catch (err) {
-      console.error("Payment error:", err);
-      alert("Failed to confirm payment");
-    } finally {
-      setLoading(false);
-    }
-  };
-
   // Order confirmation screen
   if (orderCreated) {
     return (
