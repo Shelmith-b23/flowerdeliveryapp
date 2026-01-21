@@ -7,8 +7,10 @@ class Config:
     SECRET_KEY = os.getenv("SECRET_KEY", "your_secret_key_here")
     
     # Use PostgreSQL in production, SQLite in development
-    DATABASE_URL = os.getenv("DATABASE_URL")
-    if DATABASE_URL:
+    DATABASE_URL = os.getenv("DATABASE_URL", "").strip()
+    
+    # Only use DATABASE_URL if it's a valid PostgreSQL URL
+    if DATABASE_URL and DATABASE_URL.startswith(("postgresql://", "postgres://")):
         SQLALCHEMY_DATABASE_URI = DATABASE_URL
     else:
         SQLALCHEMY_DATABASE_URI = "sqlite:///" + os.path.join(basedir, "../instance/flowerdb.db")
@@ -22,4 +24,4 @@ class Config:
     
     # File upload folder
     UPLOAD_FOLDER = os.path.join(basedir, "static", "uploads")
-    MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB max file size    
+    MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB max file size
