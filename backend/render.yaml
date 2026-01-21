@@ -3,7 +3,7 @@ services:
     name: flower-delivery-api
     env: python
     plan: free
-    buildCommand: pip cache purge && pip install --no-cache-dir --no-build-isolation --disable-pip-version-check -r requirements.txt && flask db upgrade
+    buildCommand: pip install -q -r requirements.txt && python -m flask db upgrade
     startCommand: gunicorn app:app
     envVars:
       - key: FLASK_ENV

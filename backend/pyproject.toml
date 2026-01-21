@@ -1,0 +1,10 @@
+[build-system]
+requires = ["setuptools>=65.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "flower-delivery-app"
+version = "1.0.0"
+description = "Flower delivery application"
+requires-python = ">=3.9"
+dependencies = []
