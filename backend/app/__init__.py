@@ -22,7 +22,10 @@ def create_app():
     db.init_app(app)
     migrate.init_app(app, db)
     jwt.init_app(app)
-    CORS(app, resources={r"/api/*": {"origins": "http://localhost:3000"}})
+    
+    # Configure CORS with environment variable
+    cors_origins = app.config.get('CORS_ORIGINS', ['http://localhost:3000'])
+    CORS(app, resources={r"/api/*": {"origins": cors_origins}})
 
     # Import routes and models **after db is defined**
     from . import models  # ⚡ Import models here to avoid circular import

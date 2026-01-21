@@ -4,11 +4,22 @@ import os
 basedir = os.path.abspath(os.path.dirname(__file__))
 
 class Config:
-    SECRET_KEY = "your_secret_key_here"
-    # Point SQLite DB to instance folder
-    SQLALCHEMY_DATABASE_URI = "sqlite:///" + os.path.join(basedir, "../instance/flowerdb.db")
+    SECRET_KEY = os.getenv("SECRET_KEY", "your_secret_key_here")
+    
+    # Use PostgreSQL in production, SQLite in development
+    DATABASE_URL = os.getenv("DATABASE_URL")
+    if DATABASE_URL:
+        SQLALCHEMY_DATABASE_URI = DATABASE_URL
+    else:
+        SQLALCHEMY_DATABASE_URI = "sqlite:///" + os.path.join(basedir, "../instance/flowerdb.db")
+    
     SQLALCHEMY_TRACK_MODIFICATIONS = False
-    JWT_SECRET_KEY = "your_jwt_secret_key_here"
-    CORS_ORIGINS = ["http://localhost:3000"]    # File upload folder
+    JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "your_jwt_secret_key_here")
+    
+    # CORS origins from environment or default to localhost
+    cors_origins_str = os.getenv("CORS_ORIGINS", "http://localhost:3000")
+    CORS_ORIGINS = [origin.strip() for origin in cors_origins_str.split(",")]
+    
+    # File upload folder
     UPLOAD_FOLDER = os.path.join(basedir, "static", "uploads")
     MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB max file size    

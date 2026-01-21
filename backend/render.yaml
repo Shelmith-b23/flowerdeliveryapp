@@ -1,0 +1,28 @@
+services:
+  - type: web
+    name: flower-delivery-api
+    env: python
+    plan: free
+    buildCommand: pip install -r requirements.txt && flask db upgrade
+    startCommand: gunicorn app:app
+    envVars:
+      - key: FLASK_ENV
+        value: production
+      - key: FLASK_APP
+        value: run.py
+      - key: DATABASE_URL
+        fromDatabase:
+          name: flower-delivery-db
+          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true
+      - key: JWT_SECRET_KEY
+        generateValue: true
+      - key: CORS_ORIGINS
+        value: https://yourdomain.vercel.app
+  - type: pserv
+    name: flower-delivery-db
+    plan: free
+    ipAllowList: []
+    postgreSQL:
+      version: 15
