@@ -4,7 +4,7 @@
 
 let baseURL =
   process.env.REACT_APP_API_URL?.replace(/\/$/, "") ||
-  "http://127.0.0.1:5000/api";
+  "https://flowerdeliveryapp-aid0.onrender.com/api";
 
 const defaultHeaders = { "Content-Type": "application/json" };
 let globalHeaders = {};

@@ -271,7 +271,7 @@ export default function FloristFlowerManagement() {
               {imagePreview && (
                 <div className="image-preview">
                   <p className="preview-label">Image Preview:</p>
-                  <img src={imagePreview} alt="Preview" onError={(e) => e.target.src = "https://via.placeholder.com/100?text=Error"} />
+                  <img src={imagePreview} alt="Preview" onError={(e) => e.target.src = "https://placehold.co/100?text=Error"} />
                 </div>
               )}
 
@@ -306,7 +306,7 @@ export default function FloristFlowerManagement() {
                           src={flower.image_url}
                           alt={flower.name}
                           className="flower-image"
-                          onError={(e) => e.target.src = "https://via.placeholder.com/150?text=No+Image"}
+                          onError={(e) => e.target.src = "https://placehold.co/150?text=No+Image"}
                         />
                       )}
                       <div className={`stock-badge ${flower.stock_status}`}>

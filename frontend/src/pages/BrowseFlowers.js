@@ -160,7 +160,7 @@ export default function BrowseFlowers() {
                     {/* Flower Image */}
                     <div style={{ position: "relative", overflow: "hidden" }}>
                       <img
-                        src={flower.image_url || "https://via.placeholder.com/250x200?text=Flower"}
+                        src={flower.image_url || "https://placehold.co/250x200?text=No+Image"}
                         alt={flower.name}
                         style={{
                           width: "100%",

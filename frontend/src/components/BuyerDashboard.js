@@ -102,7 +102,7 @@ export default function BuyerDashboard({ user }) {
               <div key={flower.id} className="bd-featured-card">
                 <div className="bd-featured-image">
                   <img
-                    src={flower.image_url || "https://via.placeholder.com/200"}
+                    src={flower.image_url || "https://placehold.co/200?text=No+Image"}
                     alt={flower.name}
                   />
                 </div>

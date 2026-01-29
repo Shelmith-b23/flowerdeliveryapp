@@ -43,15 +43,7 @@
 In the "Environment" section, add these variables:
 
 ```
-FLASK_ENV=production
-FLASK_APP=run.py
-DATABASE_URL=[Paste the Internal Database URL from step 1]
-SECRET_KEY=[Generate using: python -c "import secrets; print(secrets.token_hex(32))"]
-JWT_SECRET_KEY=[Generate using: python -c "import secrets; print(secrets.token_hex(32))"]
-CORS_ORIGINS=http://localhost:3000
-PESAPAL_CONSUMER_KEY=[Your PesaPal consumer key]
-PESAPAL_CONSUMER_SECRET=[Your PesaPal consumer secret]
-PESAPAL_API_URL=https://api.pesapal.com
+
 ```
 
 To generate SECRET_KEY and JWT_SECRET_KEY, run locally:

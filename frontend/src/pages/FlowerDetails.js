@@ -83,9 +83,9 @@ export default function FlowerDetails() {
         <div className="details-image-section">
           <div className="main-image">
             <img
-              src={flower.image_url || "https://via.placeholder.com/500x400?text=Flower"}
+              src={flower.image_url || "https://placehold.co/500x400?text=No+Image"}
               alt={flower.name}
-              onError={(e) => e.target.src = "https://via.placeholder.com/500x400?text=No+Image"}
+              onError={(e) => e.target.src = "https://placehold.co/500x400?text=Error"}
             />
             {flower.stock_status === "out_of_stock" && (
               <div className="out-of-stock-overlay">Out of Stock</div>

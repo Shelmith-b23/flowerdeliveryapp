@@ -19,7 +19,7 @@ class Config:
     JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "your_jwt_secret_key_here")
     
     # CORS origins from environment or default to localhost
-    cors_origins_str = os.getenv("CORS_ORIGINS", "http://localhost:3000")
+    cors_origins_str = os.getenv("CORS_ORIGINS", "http://localhost:3000,https://flowerdeliveryapp-aid0.onrender.com")
     CORS_ORIGINS = [origin.strip() for origin in cors_origins_str.split(",")]
     
     # File upload folder
