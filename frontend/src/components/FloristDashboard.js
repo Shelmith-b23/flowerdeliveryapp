@@ -89,7 +89,7 @@ export default function FloristDashboard({ user }) {
     <div className="fd-container">
       <div className="fd-header">
         <div>
-          <h1>Florist Dashboard</h1>
+          <h1>Florist</h1>
           <p className="sub">{user.shop_name || user.name}</p>
         </div>
         <div className="fd-header-actions">

@@ -61,7 +61,7 @@ html, body, #root {
 /* ===== BODY ===== */
 body {
   font-family: var(--font-serif);
-  background: linear-gradient(180deg, #fdfbfb 0%, #f5f3f3 100%);
+  background: linear-gradient(135deg, #8b0d0d, #1c1c1c);
   color: var(--text-main);
   line-height: 1.6;
   overflow-x: hidden;
