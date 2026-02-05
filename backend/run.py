@@ -1,8 +1,6 @@
-from app import create_app, db
+# run.py
+from backend.app import create_app
 
 app = create_app()
-
 if __name__ == "__main__":
-    import os
-    debug_mode = os.getenv("FLASK_ENV") != "production"
-    app.run(debug=debug_mode)
+    app.run(host="0.0.0.0", port=5000)

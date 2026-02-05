@@ -19,8 +19,8 @@ class PesaPalPayment:
     
     def __init__(self):
         """Initialize PesaPal with credentials from environment"""
-        self.consumer_key = os.getenv("PESAPAL_CONSUMER_KEY", "your_consumer_key")
-        self.consumer_secret = os.getenv("PESAPAL_CONSUMER_SECRET", "your_consumer_secret")
+        self.consumer_key = os.getenv("PESAPAL_CONSUMER_KEY", "vGoEp880+4Oix0t56wVLkyWg1T8n8F/q")
+        self.consumer_secret = os.getenv("PESAPAL_CONSUMER_SECRET", "3quLzptUCXShb7VBEnC2FVsiQa8=")
         self.merchant_reference_id = os.getenv("PESAPAL_MERCHANT_ID", "your_merchant_id")
         self.pesapal_public_key = os.getenv("PESAPAL_PUBLIC_KEY", "your_public_key")
     
@@ -202,7 +202,7 @@ class PesaPalPayment:
     
     def _get_callback_url(self):
         """Get the callback URL for PesaPal to return to after payment"""
-        callback_url = os.getenv("PESAPAL_CALLBACK_URL", "http://localhost:3000/payment-callback")
+        callback_url = os.getenv("PESAPAL_CALLBACK_URL", "https://flora-x.pages.dev/payment-callback")
         return callback_url
     
     def _build_iframe_url(self, params):

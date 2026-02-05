@@ -6,22 +6,26 @@ basedir = os.path.abspath(os.path.dirname(__file__))
 class Config:
     SECRET_KEY = os.getenv("SECRET_KEY", "your_secret_key_here")
     
-    # Use PostgreSQL in production, SQLite in development
+    # Get Database URL from Render environment
     DATABASE_URL = os.getenv("DATABASE_URL", "").strip()
     
-    # Only use DATABASE_URL if it's a valid PostgreSQL URL
-    if DATABASE_URL and DATABASE_URL.startswith(("postgresql://", "postgres://")):
-        SQLALCHEMY_DATABASE_URI = DATABASE_URL
+    # Fix Render's 'postgres://' to 'postgresql://' for SQLAlchemy 1.4+
+    if DATABASE_URL:
+        if DATABASE_URL.startswith("postgres://"):
+            SQLALCHEMY_DATABASE_URI = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+        else:
+            SQLALCHEMY_DATABASE_URI = DATABASE_URL
     else:
+        # Fallback for local development only
         SQLALCHEMY_DATABASE_URI = "sqlite:///" + os.path.join(basedir, "../instance/flowerdb.db")
     
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "your_jwt_secret_key_here")
     
-    # CORS origins from environment or default to localhost
-    cors_origins_str = os.getenv("CORS_ORIGINS", "http://localhost:3000,https://flowerdeliveryapp-aid0.onrender.com")
-    CORS_ORIGINS = [origin.strip() for origin in cors_origins_str.split(",")]
+    # 🔹 CORS origins logic (matches the app.py clean version)
+    cors_origins_str = os.getenv("CORS_ORIGINS", "https://flora-x.pages.dev,http://localhost:3000")
+    CORS_ORIGINS = [origin.strip().rstrip('/') for origin in cors_origins_str.split(",")]
     
     # File upload folder
     UPLOAD_FOLDER = os.path.join(basedir, "static", "uploads")
-    MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB max file size
+    MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB
