@@ -1,6 +1,4 @@
 // src/api/axios.js
-// Lightweight fetch wrapper for API requests
-// Supports JWT auth, dynamic baseURL, logout, and better error handling
 
 let baseURL =
   process.env.REACT_APP_API_URL?.replace(/\/$/, "") ||
@@ -9,36 +7,35 @@ let baseURL =
 const defaultHeaders = { "Content-Type": "application/json" };
 let globalHeaders = {};
 
-// Utility: fetch wrapper
+// On initial load, attach token from localStorage if it exists
+const storedToken = localStorage.getItem("token");
+if (storedToken) {
+  globalHeaders["Authorization"] = `Bearer ${storedToken}`;
+}
+
 async function request(method, url, data = null, opts = {}) {
   const headers = { ...defaultHeaders, ...globalHeaders, ...(opts.headers || {}) };
   const fetchOpts = { method, headers };
 
-  // Handle FormData (for file uploads)
   if (data instanceof FormData) {
-    // Remove Content-Type header so browser can set it with boundary
     delete headers["Content-Type"];
     fetchOpts.body = data;
   } else if (data != null && method !== "GET") {
     fetchOpts.body = JSON.stringify(data);
   }
 
-  // Debug: Log headers for form data requests
-  if (data instanceof FormData) {
-    console.log("FormData request headers:", headers);
-  }
+  if (opts.withCredentials) fetchOpts.credentials = "include";
 
-  if (opts.withCredentials) {
-    fetchOpts.credentials = "include";
-  }
+  const cleanBase = baseURL.replace(/\/$/, "");
+  const cleanUrl = url.replace(/^\//, "");
+  const finalURL = `${cleanBase}/${cleanUrl}`;
 
   let resp;
   try {
-    resp = await fetch(baseURL + url, fetchOpts);
+    resp = await fetch(finalURL, fetchOpts);
   } catch (err) {
-    // Network error or CORS issue
     throw new Error(
-      `Network error: Could not reach ${baseURL + url}. Check server or CORS.`
+      `Network error: Could not reach ${finalURL}. Check server or CORS.`
     );
   }
 
@@ -56,7 +53,7 @@ async function request(method, url, data = null, opts = {}) {
 
   if (!resp.ok) {
     const error = new Error(
-      (parsed && parsed.message) || `Request failed with status ${resp.status}`
+      (parsed && (parsed.message || parsed.error)) || `Request failed with status ${resp.status}`
     );
     error.response = axiosLikeResponse;
     throw error;
@@ -72,26 +69,27 @@ const api = {
   patch: (url, data, opts) => request("PATCH", url, data, opts),
   delete: (url, data, opts) => request("DELETE", url, data, opts),
 
-  // Dynamically change base URL
   setBaseURL: (newBaseURL) => {
     if (newBaseURL) baseURL = newBaseURL.replace(/\/$/, "");
   },
 
-  // Set JWT token globally for all requests
   setAuthToken: (token) => {
-    if (token) globalHeaders["Authorization"] = `Bearer ${token}`;
-    else delete globalHeaders["Authorization"];
+    if (token) {
+      globalHeaders["Authorization"] = `Bearer ${token}`;
+      localStorage.setItem("token", token); // also save token
+    } else {
+      delete globalHeaders["Authorization"];
+      localStorage.removeItem("token");
+    }
   },
 
-  // Clear auth + localStorage (logout)
   logout: () => {
     delete globalHeaders["Authorization"];
     localStorage.removeItem("token");
     localStorage.removeItem("user");
-    window.location.href = "/login"; // redirect to login
+    window.location.href = "/login";
   },
 
-  // Set custom global headers
   setGlobalHeader: (key, value) => {
     if (value) globalHeaders[key] = value;
     else delete globalHeaders[key];
