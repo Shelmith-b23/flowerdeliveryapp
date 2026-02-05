@@ -227,7 +227,7 @@ export default function FloristDashboard({ user }) {
         </button>
       </div>
 
-      <div className="fd-section">
+      {/* <div className="fd-section">
         <h2>🌹 Add New Flower</h2>
         <div className="fd-form-row">
           <input
@@ -262,8 +262,8 @@ export default function FloristDashboard({ user }) {
         <button className="fd-btn primary" onClick={handleAddFlower}>
           ➕ Add Flower
         </button>
-      </div>
-
+      // </div> */
+      }
       {/* Order Detail Modal */}
       {selectedOrder && (
         <div className="fd-modal-overlay" onClick={() => setSelectedOrder(null)}>
