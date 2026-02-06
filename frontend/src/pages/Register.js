@@ -18,10 +18,10 @@ export default function Register({ setUser }) {
     setLoading(true);
 
     try {
-      await api.post("/auth/register", { name, email, password, role });
+      await api.post("auth/register", { name, email, password, role });
 
       // Auto-login after registration
-      const res = await api.post("/auth/login", { email, password });
+      const res = await api.post("auth/login/", { email, password });
       const { token, user } = res.data;
 
       localStorage.setItem("token", token);
