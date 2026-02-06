@@ -17,9 +17,13 @@ class Config:
     JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "jwt-secret-key-replace-in-prod")
     
     # CORS: Load from env or use defaults
-    CORS_ORIGINS = os.getenv("CORS_ORIGINS", "https://flowerdeliveryapp-aid0.onrender.com,https://flora-x.pages.dev/").split(",")
+CORS_ORIGINS = os.getenv(
+    "CORS_ORIGINS",
+    "https://flowerdeliveryapp-aid0.onrender.com,https://flora-x.pages.dev"
+).split(",")
+
     
     # File Uploads
     # We use 'static/uploads' so Flask can serve them automatically via /static/
-    UPLOAD_FOLDER = os.path.join(basedir, "static", "uploads")
-    MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB limit
+UPLOAD_FOLDER = os.path.join(basedir, "static", "uploads")
+MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB limit
