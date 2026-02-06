@@ -9,7 +9,7 @@ auth_bp = Blueprint("auth_bp", __name__)
 # ======================
 # REGISTER
 # ======================
-@auth_bp.route("/register", methods=["POST"])
+@auth_bp.route("auth/register", methods=["POST"])
 def register():
     data = request.get_json()
 
@@ -39,7 +39,7 @@ def register():
 # ======================
 # LOGIN
 # ======================
-@auth_bp.route("/login", methods=["POST"])
+@auth_bp.route("auth/login", methods=["POST"])
 def login():
     data = request.get_json()
 
