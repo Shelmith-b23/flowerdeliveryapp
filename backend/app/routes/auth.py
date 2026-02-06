@@ -8,8 +8,13 @@ auth_bp = Blueprint("auth_bp", __name__)
 # ======================
 # REGISTER -> Final URL: /api/auth/register
 # ======================
-@auth_bp.route("/register", methods=["POST"])
+# Added "OPTIONS" to methods to satisfy CORS preflight checks
+@auth_bp.route("/register", methods=["POST", "OPTIONS"])
 def register():
+    # Handle the OPTIONS preflight request immediately
+    if request.method == "OPTIONS":
+        return jsonify({"message": "OK"}), 200
+
     data = request.get_json()
     if not data:
         return jsonify({"error": "No data provided"}), 400
@@ -32,8 +37,13 @@ def register():
 # ======================
 # LOGIN -> Final URL: /api/auth/login
 # ======================
-@auth_bp.route("/login", methods=["POST"])
+# Added "OPTIONS" to methods to satisfy CORS preflight checks
+@auth_bp.route("/login", methods=["POST", "OPTIONS"])
 def login():
+    # Handle the OPTIONS preflight request immediately
+    if request.method == "OPTIONS":
+        return jsonify({"message": "OK"}), 200
+
     data = request.get_json()
     if not data:
         return jsonify({"error": "No data provided"}), 400
@@ -46,6 +56,7 @@ def login():
     if not user or not user.check_password(password):
         return jsonify({"error": "Invalid email or password"}), 401
 
+    # Flask-JWT-Extended usually expects a string for identity
     access_token = create_access_token(identity=str(user.id))
 
     return jsonify({
