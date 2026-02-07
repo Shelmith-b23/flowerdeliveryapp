@@ -1,4 +1,5 @@
 import os
+import sys
 
 basedir = os.path.abspath(os.path.dirname(__file__))
 
@@ -8,12 +9,17 @@ class Config:
     
     # Render uses 'postgres://', SQLAlchemy requires 'postgresql://'
     database_url = os.getenv("DATABASE_URL", "").strip()
-    if database_url and database_url.startswith("postgres://"):
-        SQLALCHEMY_DATABASE_URI = database_url.replace("postgres://", "postgresql://", 1)
-    elif database_url:
-        SQLALCHEMY_DATABASE_URI = database_url
-    else:
+    
+    # Debug: Log the DATABASE_URL for troubleshooting
+    if not database_url:
+        print("WARNING: DATABASE_URL not set, using SQLite fallback", file=sys.stderr)
         SQLALCHEMY_DATABASE_URI = f"sqlite:///{os.path.join(basedir, 'app.db')}"
+    elif database_url.startswith("postgres://"):
+        SQLALCHEMY_DATABASE_URI = database_url.replace("postgres://", "postgresql://", 1)
+        print(f"Using PostgreSQL database (converted from postgres://)", file=sys.stderr)
+    else:
+        SQLALCHEMY_DATABASE_URI = database_url
+        print(f"Using database from DATABASE_URL", file=sys.stderr)
     
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "jwt-secret-key-replace-in-prod")
