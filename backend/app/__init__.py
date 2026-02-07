@@ -1,3 +1,4 @@
+import os
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
@@ -15,9 +16,17 @@ def create_app():
     # Load config
     from .config import Config
     app.config.from_object(Config)
+    # Debug: print resolved DB URI so deploy logs show what SQLAlchemy sees
+    import sys
+    print(f"[DEBUG] SQLALCHEMY_DATABASE_URI={app.config.get('SQLALCHEMY_DATABASE_URI')}", file=sys.stderr)
 
-    # Init extensions
-    db.init_app(app)
+    # Init extensions (catch and log errors to aid debugging on Render)
+    try:
+        db.init_app(app)
+    except Exception as e:
+        print(f"[ERROR] db.init_app failed: {e}", file=sys.stderr)
+        print(f"[ERROR] Raw DATABASE_URL env: {os.getenv('DATABASE_URL')}", file=sys.stderr)
+        raise
     migrate.init_app(app, db)
     jwt.init_app(app)
 
