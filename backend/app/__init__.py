@@ -5,6 +5,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
+from sqlalchemy.exc import OperationalError
 
 db = SQLAlchemy()
 migrate = Migrate()
@@ -60,6 +61,29 @@ def create_app():
     )
 
     app.url_map.strict_slashes = False
+
+    # 🔹 GLOBAL ERROR HANDLERS
+    @app.errorhandler(OperationalError)
+    def handle_database_error(e):
+        """Handle database connection errors"""
+        db.session.rollback()
+        print(f"[ERROR] Database operational error: {str(e)}", file=sys.stderr)
+        return jsonify({
+            "error": "Database connection error",
+            "message": "Unable to connect to database. Please try again later."
+        }), 503
+
+    @app.errorhandler(404)
+    def handle_not_found(e):
+        """Handle 404 errors"""
+        return jsonify({"error": "Not found"}), 404
+
+    @app.errorhandler(500)
+    def handle_internal_error(e):
+        """Handle unhandled 500 errors"""
+        db.session.rollback()
+        print(f"[ERROR] Unhandled error: {str(e)}", file=sys.stderr)
+        return jsonify({"error": "Internal server error"}), 500
 
     # 🔹 HEALTH CHECK ROUTE
     # Prevents 404 when opening the base backend URL
