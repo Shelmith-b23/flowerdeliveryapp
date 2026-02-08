@@ -17,18 +17,38 @@ depends_on = None
 
 
 def upgrade():
-    # SQLite requires batch mode for column type changes
-    with op.batch_alter_table('users', schema=None) as batch_op:
-        batch_op.alter_column('password_hash',
+    # Get the database dialect
+    dialect_name = op.get_context().dialect.name
+    
+    if dialect_name == 'sqlite':
+        # SQLite requires batch mode for column type changes
+        with op.batch_alter_table('users', schema=None) as batch_op:
+            batch_op.alter_column('password_hash',
+                           existing_type=sa.String(length=128),
+                           type_=sa.String(length=255),
+                           existing_nullable=False)
+    else:
+        # PostgreSQL and other databases can use direct ALTER
+        op.alter_column('users', 'password_hash',
                        existing_type=sa.String(length=128),
                        type_=sa.String(length=255),
                        existing_nullable=False)
 
 
 def downgrade():
-    # Revert to original size
-    with op.batch_alter_table('users', schema=None) as batch_op:
-        batch_op.alter_column('password_hash',
+    # Get the database dialect
+    dialect_name = op.get_context().dialect.name
+    
+    if dialect_name == 'sqlite':
+        # SQLite requires batch mode for column type changes
+        with op.batch_alter_table('users', schema=None) as batch_op:
+            batch_op.alter_column('password_hash',
+                           existing_type=sa.String(length=255),
+                           type_=sa.String(length=128),
+                           existing_nullable=False)
+    else:
+        # PostgreSQL and other databases can use direct ALTER
+        op.alter_column('users', 'password_hash',
                        existing_type=sa.String(length=255),
                        type_=sa.String(length=128),
                        existing_nullable=False)
