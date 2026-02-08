@@ -32,14 +32,14 @@ def create_app():
     jwt.init_app(app)
 
     # 🔹 AUTO-CREATE TABLES LOGIC
-    # This runs every time the server starts and ensures the DB is ready
-    with app.app_context():
-        try:
-            from . import models  # Import models so SQLAlchemy knows the tables
-            db.create_all()
-            print("[INFO] Database tables verified/created successfully.", file=sys.stderr)
-        except Exception as e:
-            print(f"[ERROR] Database table creation failed: {e}", file=sys.stderr)
+    # Commented out in favor of using Flask-Migrate for schema management
+    # with app.app_context():
+    #     try:
+    #         from . import models  # Import models so SQLAlchemy knows the tables
+    #         db.create_all()
+    #         print("[INFO] Database tables verified/created successfully.", file=sys.stderr)
+    #     except Exception as e:
+    #         print(f"[ERROR] Database table creation failed: {e}", file=sys.stderr)
 
     # CORS configuration
     cors_origins = [

@@ -44,17 +44,25 @@ class Config:
     
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     
-    # Connection pooling settings to handle SSL issues better
-    SQLALCHEMY_ENGINE_OPTIONS = {
-        "pool_pre_ping": True,  # Test connections before using them
-        "pool_recycle": 3600,   # Recycle connections every hour
-        "pool_size": 10,
-        "max_overflow": 20,
-        "connect_args": {
-            "connect_timeout": 10,
-            "options": "-c statement_timeout=30000"  # 30 second timeout
+    # Connection pooling settings - vary by database type
+    if not database_url or database_url.startswith("sqlite"):
+        # SQLite doesn't support connect_timeout or options
+        SQLALCHEMY_ENGINE_OPTIONS = {
+            "pool_pre_ping": True,
+            "pool_recycle": 3600,
         }
-    }
+    else:
+        # PostgreSQL supports advanced connection options
+        SQLALCHEMY_ENGINE_OPTIONS = {
+            "pool_pre_ping": True,  # Test connections before using them
+            "pool_recycle": 3600,   # Recycle connections every hour
+            "pool_size": 10,
+            "max_overflow": 20,
+            "connect_args": {
+                "connect_timeout": 10,
+                "options": "-c statement_timeout=30000"  # 30 second timeout
+            }
+        }
     
     JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "jwt-secret-key-replace-in-prod")
         # CORS: Load from env or use defaults
