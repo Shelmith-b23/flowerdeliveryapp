@@ -5,7 +5,6 @@ services:
     plan: free
     buildCommand: pip install -q -r requirements.txt
     startCommand: gunicorn --config gunicorn_config.py run:app
-    preDeployCommand: flask db upgrade
     envVars:
       - key: FLASK_ENV
         value: production

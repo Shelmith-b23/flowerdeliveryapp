@@ -31,15 +31,31 @@ def create_app():
     migrate.init_app(app, db)
     jwt.init_app(app)
 
-    # 🔹 AUTO-CREATE TABLES LOGIC
-    # Commented out in favor of using Flask-Migrate for schema management
-    # with app.app_context():
-    #     try:
-    #         from . import models  # Import models so SQLAlchemy knows the tables
-    #         db.create_all()
-    #         print("[INFO] Database tables verified/created successfully.", file=sys.stderr)
-    #     except Exception as e:
-    #         print(f"[ERROR] Database table creation failed: {e}", file=sys.stderr)
+    # 🔹 AUTO-RUN MIGRATIONS ON STARTUP (PRODUCTION ONLY)
+    # Ensures database schema is always up-to-date
+    if os.getenv('FLASK_ENV') == 'production':
+        with app.app_context():
+            try:
+                from . import models  # Import models
+                from alembic.config import Config as AlembicConfig
+                from alembic import command
+                
+                # Set up Alembic config
+                migrations_dir = os.path.join(os.path.dirname(__file__), '..', 'migrations')
+                alembic_ini = os.path.join(migrations_dir, 'alembic.ini')
+                
+                alembic_cfg = AlembicConfig(alembic_ini)
+                alembic_cfg.set_main_option(
+                    'sqlalchemy.url',
+                    app.config.get('SQLALCHEMY_DATABASE_URI') or 'sqlite:///app.db'
+                )
+                
+                # Run upgrade to head revision
+                command.upgrade(alembic_cfg, 'head')
+                print("[INFO] Database migrations applied successfully.", file=sys.stderr)
+            except Exception as e:
+                print(f"[WARNING] Auto-migration failed: {e}", file=sys.stderr)
+                # Log but don't fail startup
 
     # CORS configuration
     cors_origins = [
