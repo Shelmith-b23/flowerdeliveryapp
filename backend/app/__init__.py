@@ -57,13 +57,20 @@ def create_app():
                 print(f"[WARNING] Auto-migration failed: {e}", file=sys.stderr)
                 # Log but don't fail startup
 
-    # CORS configuration
-    cors_origins = [
-        "https://flora-x.pages.dev",
-        "https://flowerdeliveryapp-aid0.onrender.com",
-        "http://localhost:3000",
-    ]
+    # CORS configuration - read allowed origins from config if present
+    # fall back to a safe default list used during local development
+    cors_origins = app.config.get(
+        "CORS_ORIGINS",
+        [
+            "https://flora-x.pages.dev",
+            "https://flowerdeliveryapp-aid0.onrender.com",
+            "http://localhost:3000",
+        ],
+    )
 
+    # Use Flask-CORS to ensure preflight (OPTIONS) responses include
+    # the required Access-Control-* headers. Keep this resource mapping
+    # scoped to /api/* so static files and other routes are unaffected.
     CORS(
         app,
         resources={
@@ -74,6 +81,7 @@ def create_app():
             }
         },
         supports_credentials=True,
+        expose_headers=["Content-Type", "Authorization"],
     )
 
     app.url_map.strict_slashes = False
