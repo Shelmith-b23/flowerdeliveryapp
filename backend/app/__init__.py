@@ -69,19 +69,19 @@ def create_app():
     )
 
     # Use Flask-CORS to ensure preflight (OPTIONS) responses include
-    # the required Access-Control-* headers. Keep this resource mapping
-    # scoped to /api/* so static files and other routes are unaffected.
+    # the required Access-Control-* headers. For debugging, apply a
+    # permissive global rule to quickly verify CORS is working behind
+    # the hosting/proxy. Revert to a scoped rule before production.
     CORS(
         app,
         resources={
-            r"/api/*": {
-                "origins": cors_origins,
+            r"/*": {
+                "origins": "*",
                 "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
                 "allow_headers": ["Content-Type", "Authorization"],
             }
         },
-        supports_credentials=True,
-        expose_headers=["Content-Type", "Authorization"],
+        supports_credentials=False,
     )
 
     app.url_map.strict_slashes = False
