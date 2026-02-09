@@ -50,6 +50,14 @@ export default function Checkout({ user }) {
     setCartItems([]);
   };
 
+  const removeFromCart = (itemId) => {
+    const updated = cartItems.filter(i => i.id !== itemId);
+    setCartItems(updated);
+    try {
+      localStorage.setItem("cart", JSON.stringify(updated));
+    } catch (e) {}
+  };
+
   const validateForm = () => {
     if (!deliveryInfo.buyer_name.trim()) return alert("Enter full name");
     if (!deliveryInfo.buyer_phone.trim()) return alert("Enter phone number");
@@ -223,10 +231,20 @@ export default function Checkout({ user }) {
         <div className="card">
           <h3>Order Summary</h3>
           {cartItems.map(item => (
-            <p key={item.id}>
-              {item.name} × {item.quantity} — KSh{" "}
-              {(item.price * item.quantity).toFixed(2)}
-            </p>
+            <div key={item.id} className="cart-item">
+              <div className="cart-item-desc">
+                {item.name} × {item.quantity} — KSh {(item.price * item.quantity).toFixed(2)}
+              </div>
+              <div className="cart-item-actions">
+                <button
+                  className="btn-small btn-delete"
+                  onClick={() => removeFromCart(item.id)}
+                  aria-label={`Remove ${item.name} from cart`}
+                >
+                  ✖ Remove
+                </button>
+              </div>
+            </div>
           ))}
           <h4>Total: KSh {total.toFixed(2)}</h4>
         </div>
