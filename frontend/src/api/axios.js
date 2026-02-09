@@ -44,8 +44,16 @@ async function request(method, url, data = null, opts = {}) {
 const api = {
     post: (url, data) => request("POST", url, data),
     get: (url) => request("GET", url),
+    put: (url, data) => request("PUT", url, data),
+    delete: (url) => request("DELETE", url),
     setAuthToken: (token) => {
+        if (!token) {
+            delete globalHeaders["Authorization"];
+            localStorage.removeItem("token");
+            return;
+        }
         globalHeaders["Authorization"] = `Bearer ${token}`;
+        try { localStorage.setItem("token", token); } catch (e) {}
     }
 };
 
