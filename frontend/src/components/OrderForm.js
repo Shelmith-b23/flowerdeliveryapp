@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import api from "../api/axios";
 
 
@@ -6,6 +6,13 @@ export default function OrderForm({ user, flower, onOrderPlaced }) {
   const [quantity, setQuantity] = useState(1);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      api.setAuthToken(token);
+    }
+  }, []);
 
   const placeOrder = async () => {
     if (!quantity || quantity <= 0) {

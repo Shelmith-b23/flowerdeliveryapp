@@ -5,6 +5,13 @@ export default function Orders() {
   const [orders, setOrders] = useState([]);
 
   useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      api.setAuthToken(token);
+    }
+  }, []);
+
+  useEffect(() => {
     const fetchOrders = async () => {
       try {
         const res = await api.get("/orders"); // Your API endpoint for buyer orders

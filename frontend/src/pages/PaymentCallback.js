@@ -7,6 +7,13 @@ export default function PaymentCallback() {
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState("processing");
 
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      api.setAuthToken(token);
+    }
+  }, []);
+
   const verifyPayment = useCallback(async () => {
     try {
       const reference = localStorage.getItem("pesapal_reference");

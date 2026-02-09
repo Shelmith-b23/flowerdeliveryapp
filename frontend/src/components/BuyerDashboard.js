@@ -10,6 +10,14 @@ export default function BuyerDashboard({ user }) {
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [cartCount, setCartCount] = useState(0);
 
+  // Set auth token on mount
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      api.setAuthToken(token);
+    }
+  }, []);
+
   useEffect(() => {
     fetchOrders();
     fetchFeaturedFlowers();

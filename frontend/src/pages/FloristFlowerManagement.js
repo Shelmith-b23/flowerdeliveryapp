@@ -18,6 +18,14 @@ export default function FloristFlowerManagement() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
+  // Set auth token on mount
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      api.setAuthToken(token);
+    }
+  }, []);
+
   // Fetch florist's flowers on mount
   useEffect(() => {
     fetchFlowers();

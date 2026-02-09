@@ -22,6 +22,14 @@ export default function FloristDashboard({ user }) {
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [loading, setLoading] = useState(false);
 
+  // Set auth token on mount
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      api.setAuthToken(token);
+    }
+  }, []);
+
   // Fetch orders when component mounts
   useEffect(() => {
     fetchOrders();
