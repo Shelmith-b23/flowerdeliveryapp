@@ -112,14 +112,10 @@ def create_app():
     from .routes.flowers import flowers_bp
     from .routes.orders import orders_bp
     from .routes.payment import payment_bp
-    from .routes.messages import messages_bp
-    from .routes.tracking import tracking_bp
 
     app.register_blueprint(auth_bp, url_prefix="/api/auth")
     app.register_blueprint(flowers_bp, url_prefix="/api/flowers")
     app.register_blueprint(orders_bp)  # Already has url_prefix="/api/orders"
     app.register_blueprint(payment_bp)  # Already has url_prefix="/api/payment"
-    app.register_blueprint(messages_bp, url_prefix="/api/messages")
-    app.register_blueprint(tracking_bp, url_prefix="/api/tracking")
 
     return app
