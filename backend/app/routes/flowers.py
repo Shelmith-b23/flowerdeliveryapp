@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify, current_app
+from flask import Blueprint, request, jsonify, current_app, url_for
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from werkzeug.utils import secure_filename
 import os
@@ -31,7 +31,12 @@ def add_flower():
         # Ensure directory exists
         os.makedirs(current_app.config["UPLOAD_FOLDER"], exist_ok=True)
         file.save(os.path.join(current_app.config["UPLOAD_FOLDER"], filename))
-        saved_path = f"/static/uploads/{filename}"
+        # Use absolute URL so frontend (hosted elsewhere) can load the image
+        try:
+            saved_path = url_for('static', filename=f'uploads/{filename}', _external=True)
+        except Exception:
+            # Fallback: construct using request.url_root
+            saved_path = request.url_root.rstrip('/') + f"/static/uploads/{filename}"
     elif image_url:
         saved_path = image_url
     else:
@@ -56,7 +61,31 @@ def get_flowers():
         "id": f.id,
         "name": f.name,
         "price": f.price,
-        "image_url": f.image_url,
+        "image_url": (f.image_url if (f.image_url and f.image_url.startswith('http')) else (request.url_root.rstrip('/') + f.image_url if f.image_url and f.image_url.startswith('/') else (request.url_root.rstrip('/') + '/static/uploads/' + f.image_url if f.image_url else None))),
         "description": f.description,
         "shop_name": User.query.get(f.florist_id).name if User.query.get(f.florist_id) else "Unknown"
     } for f in flowers]), 200
+
+
+# URL: GET /api/flowers/florist/my-flowers
+# Returns flowers belonging to the authenticated florist
+@flowers_bp.route("/florist/my-flowers", methods=["GET", "OPTIONS"])
+@jwt_required()
+def get_my_flowers():
+    # Handle OPTIONS preflight quickly
+    if request.method == "OPTIONS":
+        return jsonify({"message": "OK"}), 200
+
+    florist_id = get_jwt_identity()
+    my_flowers = Flower.query.filter_by(florist_id=florist_id).all()
+    result = []
+    for f in my_flowers:
+        result.append({
+            "id": f.id,
+            "name": f.name,
+            "price": f.price,
+            "image_url": (f.image_url if (f.image_url and f.image_url.startswith('http')) else (request.url_root.rstrip('/') + f.image_url if f.image_url and f.image_url.startswith('/') else (request.url_root.rstrip('/') + '/static/uploads/' + f.image_url if f.image_url else None))),
+            "description": f.description,
+            "stock_status": getattr(f, "stock_status", "in_stock")
+        })
+    return jsonify(result), 200
