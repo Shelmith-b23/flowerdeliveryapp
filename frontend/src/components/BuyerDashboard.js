@@ -242,7 +242,7 @@ export default function BuyerDashboard({ user }) {
         .bd-order-card { background: white; border: 1px solid #7a2727; padding: 15px; border-radius: 8px; }
         .bd-order-header { display: flex; justify-content: space-between; margin-bottom: 15px; }
         .bd-status-badge { padding: 4px 10px; border-radius: 12px; color: white; font-size: 0.8em; }
-        .bd-order-total { display: flex; justify-content: space-between; font-weight: bold; padding: 10px; background: #fdf2f8; border-radius: 4px; }
+        .bd-order-total { display: flex; justify-content: space-between; font-weight: bold; padding: 10px; background: #080406; border-radius: 4px; }
 
         .bd-modal-overlay { position: fixed; top:0; left:0; right:0; bottom:0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; }
         .bd-modal { background: white; padding: 25px; border-radius: 12px; width: 90%; max-width: 450px; position: relative; }
