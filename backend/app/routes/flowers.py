@@ -66,6 +66,26 @@ def get_flowers():
         "shop_name": User.query.get(f.florist_id).name if User.query.get(f.florist_id) else "Unknown"
     } for f in flowers]), 200
 
+# NEW: URL: GET /api/flowers/<int:flower_id>
+# Allows buyers (and anyone) to view details of a specific flower, including the florist's uploaded image
+@flowers_bp.route("/<int:flower_id>", methods=["GET"])
+def get_flower(flower_id):
+    flower = Flower.query.get(flower_id)
+    if not flower:
+        return jsonify({"error": "Flower not found"}), 404
+    
+    # Construct image URL for buyers to see
+    image_url = (flower.image_url if (flower.image_url and flower.image_url.startswith('http')) else (request.url_root.rstrip('/') + flower.image_url if flower.image_url and flower.image_url.startswith('/') else (request.url_root.rstrip('/') + '/static/uploads/' + flower.image_url if flower.image_url else None)))
+    
+    return jsonify({
+        "id": flower.id,
+        "name": flower.name,
+        "price": flower.price,
+        "image_url": image_url,  # Buyers can now see the florist's image here
+        "description": flower.description,
+        "shop_name": User.query.get(flower.florist_id).name if User.query.get(flower.florist_id) else "Unknown",
+        "stock_status": getattr(flower, "stock_status", "in_stock")
+    }), 200
 
 # URL: GET /api/flowers/florist/my-flowers
 # Returns flowers belonging to the authenticated florist
@@ -89,7 +109,6 @@ def get_my_flowers():
             "stock_status": getattr(f, "stock_status", "in_stock")
         })
     return jsonify(result), 200
-
 
 # URL: PUT /api/flowers/<id>
 # Update a flower (florist only)
@@ -145,7 +164,6 @@ def update_flower(flower_id):
     
     db.session.commit()
     return jsonify({"message": "Flower updated", "id": flower.id}), 200
-
 
 # URL: DELETE /api/flowers/<id>
 # Delete a flower (florist only)
