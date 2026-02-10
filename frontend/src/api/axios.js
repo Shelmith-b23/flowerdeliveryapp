@@ -1,7 +1,7 @@
 // src/api/axios.js
 
 // Ensure this is your BACKEND Render URL, not the frontend one!
-let baseURL = "https://flowerdeliveryapp-aid0.onrender.com/api";
+let baseURL = "https://api.flora-x.pages.dev/api";
 
 const defaultHeaders = { "Content-Type": "application/json" };
 let globalHeaders = {};

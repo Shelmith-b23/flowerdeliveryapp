@@ -2,12 +2,12 @@
   "buildCommand": "npm run build",
   "outputDirectory": "build",
   "env": {
-    "REACT_APP_API_URL": "https://flowerdeliveryapp-aid0.onrender.com/api"
+    "REACT_APP_API_URL": "https://api.flora-x.pages.dev/api"
   },
   "redirects": [
     {
       "source": "/api/:path*",
-      "destination": "https://flowerdeliveryapp-aid0.onrender.com/api/:path*"
+      "destination": "https://api.flora-x.pages.dev/api/:path*"
     }
   ],
   "rewrites": [

@@ -63,7 +63,7 @@ def create_app():
         "CORS_ORIGINS",
         [
             "https://flora-x.pages.dev",
-            "https://flowerdeliveryapp-aid0.onrender.com",
+            "https://api.flora-x.pages.dev",
             "http://localhost:3000",
         ],
     )

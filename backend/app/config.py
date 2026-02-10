@@ -68,7 +68,7 @@ class Config:
         # CORS: Load from env or use defaults
     CORS_ORIGINS = os.getenv(
             "CORS_ORIGINS",
-            "https://flowerdeliveryapp-aid0.onrender.com,https://flora-x.pages.dev,http://localhost:3000"
+            "https://api.flora-x.pages.dev,https://flora-x.pages.dev,http://localhost:3000"
         ).split(",")
     
 
