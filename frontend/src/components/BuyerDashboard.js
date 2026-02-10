@@ -8,6 +8,7 @@ export default function BuyerDashboard({ user }) {
   const [loading, setLoading] = useState(true);
   const [flowersLoading, setFlowersLoading] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState(null);
+  const [selectedShop, setSelectedShop] = useState(null);  // New: For shop details modal
   const [cartCount, setCartCount] = useState(0);
 
   // Set auth token on mount
@@ -44,6 +45,17 @@ export default function BuyerDashboard({ user }) {
       console.error("Failed to fetch flowers:", err);
     } finally {
       setFlowersLoading(false);
+    }
+  };
+
+  // New: Fetch shop details for a florist
+  const fetchShopDetails = async (floristId) => {
+    try {
+      const res = await api.get(`/auth/shop/${floristId}`);
+      setSelectedShop(res.data);
+    } catch (err) {
+      console.error("Failed to fetch shop details:", err);
+      alert("Unable to load shop details.");
     }
   };
 
@@ -145,7 +157,13 @@ export default function BuyerDashboard({ user }) {
                 </div>
                 <div className="bd-featured-info">
                   <h4>{flower.name}</h4>
-                  <p className="bd-featured-shop">🌺 {flower.florist?.shop_name || flower.shop_name}</p>
+                  <p 
+                    className="bd-featured-shop" 
+                    style={{ cursor: "pointer", textDecoration: "underline" }} 
+                    onClick={() => fetchShopDetails(flower.florist_id || flower.florist?.id)}  // Assuming florist_id is available; adjust if needed
+                  >
+                    🌺 {flower.florist?.shop_name || flower.shop_name}
+                  </p>
                   <div className="bd-featured-footer">
                     <span className="bd-featured-price">KSh {flower.price}</span>
                     <button 
@@ -198,7 +216,7 @@ export default function BuyerDashboard({ user }) {
         )}
       </div>
 
-      {/* Details Modal */}
+      {/* Details Modal for Orders */}
       {selectedOrder && (
         <div className="bd-modal-overlay" onClick={() => setSelectedOrder(null)}>
           <div className="bd-modal" onClick={(e) => e.stopPropagation()}>
@@ -218,6 +236,22 @@ export default function BuyerDashboard({ user }) {
               ))}
             </div>
             <button className="btn-primary" onClick={() => setSelectedOrder(null)} style={{ width: "100%" }}>Close</button>
+          </div>
+        </div>
+      )}
+
+      {/* New: Shop Details Modal */}
+      {selectedShop && (
+        <div className="bd-modal-overlay" onClick={() => setSelectedShop(null)}>
+          <div className="bd-modal" onClick={(e) => e.stopPropagation()}>
+            <button className="bd-modal-close" onClick={() => setSelectedShop(null)}>✕</button>
+            <h3>🏪 Shop Details</h3>
+            <div className="bd-modal-section">
+              <p><strong>Shop Name:</strong> {selectedShop.shop_name || "Not provided"}</p>
+              <p><strong>Address:</strong> {selectedShop.shop_address || "Not provided"}</p>
+              <p><strong>Contact:</strong> {selectedShop.shop_contact || "Not provided"}</p>
+            </div>
+            <button className="btn-primary" onClick={() => setSelectedShop(null)} style={{ width: "100%" }}>Close</button>
           </div>
         </div>
       )}

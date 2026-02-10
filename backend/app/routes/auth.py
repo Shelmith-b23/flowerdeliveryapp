@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify
-from flask_jwt_extended import create_access_token
+from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
 from sqlalchemy.exc import OperationalError
 from ..models import User
 from .. import db
@@ -79,7 +79,11 @@ def login():
                 "id": user.id,
                 "name": user.name,
                 "email": user.email,
-                "role": user.role
+                "role": user.role,
+                # Include shop details for florists
+                "shop_name": user.shop_name if user.role == "florist" else None,
+                "shop_address": user.shop_address if user.role == "florist" else None,
+                "shop_contact": user.shop_contact if user.role == "florist" else None
             }
         }), 200
     
@@ -91,3 +95,61 @@ def login():
         db.session.rollback()
         print(f"[ERROR] Login error: {str(e)}")
         return jsonify({"error": "Login failed. Please try again."}), 500
+
+
+# ======================
+# GET SHOP DETAILS -> Final URL: /api/auth/shop/<int:user_id>
+# ======================
+# Public endpoint for buyers to view shop details
+@auth_bp.route("/shop/<int:user_id>", methods=["GET"])
+def get_shop_details(user_id):
+    user = User.query.get(user_id)
+    if not user or user.role != "florist":
+        return jsonify({"error": "Shop not found"}), 404
+    
+    return jsonify({
+        "shop_name": user.shop_name,
+        "shop_address": user.shop_address,
+        "shop_contact": user.shop_contact
+    }), 200
+
+
+# ======================
+# UPDATE SHOP DETAILS -> Final URL: /api/auth/shop/<int:user_id>
+# ======================
+# For florists to update their shop details
+@auth_bp.route("/shop/<int:user_id>", methods=["PUT", "OPTIONS"])
+@jwt_required()
+def update_shop(user_id):
+    # Handle the OPTIONS preflight request immediately
+    if request.method == "OPTIONS":
+        return jsonify({"message": "OK"}), 200
+
+    current_user_id = get_jwt_identity()
+    if int(current_user_id) != user_id:
+        return jsonify({"error": "Unauthorized"}), 403
+
+    user = User.query.get(user_id)
+    if not user or user.role != "florist":
+        return jsonify({"error": "User not found"}), 404
+
+    try:
+        data = request.get_json() or {}
+        if "shop_name" in data:
+            user.shop_name = data["shop_name"]
+        if "shop_address" in data:
+            user.shop_address = data["shop_address"]
+        if "shop_contact" in data:
+            user.shop_contact = data["shop_contact"]
+        
+        db.session.commit()
+        return jsonify({"message": "Shop updated"}), 200
+    
+    except OperationalError as e:
+        db.session.rollback()
+        print(f"[ERROR] Database connection error during shop update: {str(e)}")
+        return jsonify({"error": "Database connection error. Please try again."}), 503
+    except Exception as e:
+        db.session.rollback()
+        print(f"[ERROR] Shop update error: {str(e)}")
+        return jsonify({"error": "Shop update failed. Please try again."}), 500

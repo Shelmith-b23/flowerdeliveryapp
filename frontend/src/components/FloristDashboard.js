@@ -21,6 +21,7 @@ export default function FloristDashboard({ user }) {
   const [orders, setOrders] = useState([]);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [updatingShop, setUpdatingShop] = useState(false); // Added for shop update loading
 
   // Set auth token on mount
   useEffect(() => {
@@ -48,11 +49,14 @@ export default function FloristDashboard({ user }) {
   };
 
   const handleShopUpdate = async () => {
+    setUpdatingShop(true);
     try {
       await api.put(`/auth/shop/${user.id}`, shop);
       alert("Shop updated successfully");
     } catch (err) {
       alert("Failed to update shop");
+    } finally {
+      setUpdatingShop(false);
     }
   };
 
@@ -230,48 +234,11 @@ export default function FloristDashboard({ user }) {
             onChange={(e) => setShop({ ...shop, shop_contact: e.target.value })}
           />
         </div>
-        <button className="fd-btn primary" onClick={handleShopUpdate}>
-          💾 Save Shop Details
+        <button className="fd-btn primary" onClick={handleShopUpdate} disabled={updatingShop}>
+          {updatingShop ? "Saving..." : "💾 Save Shop Details"}
         </button>
       </div>
 
-      {/* <div className="fd-section">
-        <h2>🌹 Add New Flower</h2>
-        <div className="fd-form-row">
-          <input
-            type="text"
-            placeholder="Flower Name"
-            value={flower.name}
-            onChange={(e) => setFlower({ ...flower, name: e.target.value })}
-          />
-        </div>
-        <div className="fd-form-row">
-          <input
-            type="number"
-            placeholder="Price (KSh)"
-            value={flower.price}
-            onChange={(e) => setFlower({ ...flower, price: e.target.value })}
-          />
-        </div>
-        <div className="fd-form-row">
-          <input
-            type="url"
-            placeholder="Image URL"
-            value={flower.image_url}
-            onChange={(e) => setFlower({ ...flower, image_url: e.target.value })}
-          />
-        </div>
-        <textarea
-          placeholder="Description"
-          value={flower.description}
-          onChange={(e) => setFlower({ ...flower, description: e.target.value })}
-          style={{ marginBottom: "10px" }}
-        />
-        <button className="fd-btn primary" onClick={handleAddFlower}>
-          ➕ Add Flower
-        </button>
-      // </div> */
-      }
       {/* Order Detail Modal */}
       {selectedOrder && (
         <div className="fd-modal-overlay" onClick={() => setSelectedOrder(null)}>
