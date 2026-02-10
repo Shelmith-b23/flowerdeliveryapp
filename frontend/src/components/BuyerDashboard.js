@@ -8,7 +8,7 @@ export default function BuyerDashboard({ user }) {
   const [loading, setLoading] = useState(true);
   const [flowersLoading, setFlowersLoading] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState(null);
-  const [selectedShop, setSelectedShop] = useState(null);  // New: For shop details modal
+  const [selectedShop, setSelectedShop] = useState(null);  // For shop details modal
   const [cartCount, setCartCount] = useState(0);
 
   // Set auth token on mount
@@ -48,14 +48,21 @@ export default function BuyerDashboard({ user }) {
     }
   };
 
-  // New: Fetch shop details for a florist
+  // Fetch shop details for a florist
   const fetchShopDetails = async (floristId) => {
+    if (!floristId) {
+      console.error("No florist ID provided for shop details.");
+      alert("Shop details not available.");
+      return;
+    }
+    console.log("Fetching shop details for florist ID:", floristId);  // Debug log
     try {
       const res = await api.get(`/auth/shop/${floristId}`);
+      console.log("Shop details response:", res.data);  // Debug log
       setSelectedShop(res.data);
     } catch (err) {
       console.error("Failed to fetch shop details:", err);
-      alert("Unable to load shop details.");
+      alert("Unable to load shop details. Please try again.");
     }
   };
 
@@ -77,7 +84,7 @@ export default function BuyerDashboard({ user }) {
         name: flower.name,
         price: flower.price,
         image_url: flower.image_url,
-        shop_name: flower.florist?.shop_name || flower.shop_name,
+        shop_name: flower.shop_name,  // Use shop_name from flower data
         quantity: 1
       });
     }
@@ -159,10 +166,13 @@ export default function BuyerDashboard({ user }) {
                   <h4>{flower.name}</h4>
                   <p 
                     className="bd-featured-shop" 
-                    style={{ cursor: "pointer", textDecoration: "underline" }} 
-                    onClick={() => fetchShopDetails(flower.florist_id || flower.florist?.id)}  // Assuming florist_id is available; adjust if needed
+                    style={{ cursor: "pointer", textDecoration: "underline", color: "#d81b60" }} 
+                    onClick={() => {
+                      console.log("Clicked shop for flower:", flower);  // Debug log
+                      fetchShopDetails(flower.florist_id);  // Use florist_id directly
+                    }}
                   >
-                    🌺 {flower.florist?.shop_name || flower.shop_name}
+                    🌺 {flower.shop_name}
                   </p>
                   <div className="bd-featured-footer">
                     <span className="bd-featured-price">KSh {flower.price}</span>
@@ -240,7 +250,7 @@ export default function BuyerDashboard({ user }) {
         </div>
       )}
 
-      {/* New: Shop Details Modal */}
+      {/* Shop Details Modal */}
       {selectedShop && (
         <div className="bd-modal-overlay" onClick={() => setSelectedShop(null)}>
           <div className="bd-modal" onClick={(e) => e.stopPropagation()}>
