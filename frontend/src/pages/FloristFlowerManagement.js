@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import api from "../api/axios";
 import "../styles/FloristFlowerManagement.css";
 
-export default function FloristFlowerManagement() {
+export default function FloristFlowerManagement({ user }) {  // Pass user prop from parent
   const [flowers, setFlowers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState(null);
@@ -12,7 +12,11 @@ export default function FloristFlowerManagement() {
     price: "",
     description: "",
     image_file: null,
-    stock_status: "in_stock"
+    stock_status: "in_stock",
+    // New: Shop details
+    shop_name: "",
+    shop_address: "",
+    shop_contact: ""
   });
   const [imagePreview, setImagePreview] = useState("");
   const [error, setError] = useState("");
@@ -26,10 +30,19 @@ export default function FloristFlowerManagement() {
     }
   }, []);
 
-  // Fetch florist's flowers on mount
+  // Fetch florist's flowers and pre-fill shop details on mount
   useEffect(() => {
     fetchFlowers();
-  }, []);
+    // Pre-fill shop details from user prop
+    if (user) {
+      setFormData(prev => ({
+        ...prev,
+        shop_name: user.shop_name || "",
+        shop_address: user.shop_address || "",
+        shop_contact: user.shop_contact || ""
+      }));
+    }
+  }, [user]);
 
   const fetchFlowers = async () => {
     setLoading(true);
@@ -51,7 +64,10 @@ export default function FloristFlowerManagement() {
       price: "",
       description: "",
       image_file: null,
-      stock_status: "in_stock"
+      stock_status: "in_stock",
+      shop_name: user?.shop_name || "",
+      shop_address: user?.shop_address || "",
+      shop_contact: user?.shop_contact || ""
     });
     setImagePreview("");
     setShowForm(true);
@@ -65,7 +81,10 @@ export default function FloristFlowerManagement() {
       price: flower.price,
       description: flower.description,
       image_file: null,
-      stock_status: flower.stock_status
+      stock_status: flower.stock_status,
+      shop_name: user?.shop_name || "",
+      shop_address: user?.shop_address || "",
+      shop_contact: user?.shop_contact || ""
     });
     // Show the existing image as preview
     setImagePreview(flower.image_url);
@@ -81,7 +100,10 @@ export default function FloristFlowerManagement() {
       price: "",
       description: "",
       image_file: null,
-      stock_status: "in_stock"
+      stock_status: "in_stock",
+      shop_name: user?.shop_name || "",
+      shop_address: user?.shop_address || "",
+      shop_contact: user?.shop_contact || ""
     });
     setImagePreview("");
   };
@@ -139,6 +161,10 @@ export default function FloristFlowerManagement() {
       submitData.append("price", formData.price);
       submitData.append("description", formData.description);
       submitData.append("stock_status", formData.stock_status);
+      // New: Append shop details
+      submitData.append("shop_name", formData.shop_name);
+      submitData.append("shop_address", formData.shop_address);
+      submitData.append("shop_contact", formData.shop_contact);
       
       // Only append image_file if a new file was selected
       if (formData.image_file) {
@@ -148,11 +174,11 @@ export default function FloristFlowerManagement() {
       if (editingId) {
         // Update existing flower
         await api.put(`/flowers/${editingId}`, submitData);
-        setSuccess("Flower updated successfully");
+        setSuccess("Flower and shop updated successfully");
       } else {
         // Add new flower
         await api.post("/flowers", submitData);
-        setSuccess("Flower added successfully");
+        setSuccess("Flower added and shop updated successfully");
       }
       
       // Refresh flowers list
@@ -214,6 +240,41 @@ export default function FloristFlowerManagement() {
           <div className="flower-form-container">
             <h2>{editingId ? "Edit Flower" : "Add New Flower"}</h2>
             <form onSubmit={handleSubmit} className="flower-form">
+              {/* New: Shop Details Section */}
+              <div className="shop-details-section">
+                <h3>🏪 Shop Details</h3>
+                <div className="form-group">
+                  <label>Shop Name</label>
+                  <input
+                    type="text"
+                    name="shop_name"
+                    value={formData.shop_name}
+                    onChange={handleInputChange}
+                    placeholder="Your shop name"
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Shop Address</label>
+                  <input
+                    type="text"
+                    name="shop_address"
+                    value={formData.shop_address}
+                    onChange={handleInputChange}
+                    placeholder="Shop address"
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Shop Contact</label>
+                  <input
+                    type="tel"
+                    name="shop_contact"
+                    value={formData.shop_contact}
+                    onChange={handleInputChange}
+                    placeholder="Phone number"
+                  />
+                </div>
+              </div>
+
               <div className="form-group">
                 <label>Flower Name *</label>
                 <input

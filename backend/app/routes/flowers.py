@@ -50,8 +50,16 @@ def add_flower():
         florist_id=florist_id
     )
     db.session.add(new_flower)
+    
+    # NEW: Update shop details for the florist
+    florist = User.query.get(florist_id)
+    if florist:
+        florist.shop_name = request.form.get("shop_name") or florist.shop_name
+        florist.shop_address = request.form.get("shop_address") or florist.shop_address
+        florist.shop_contact = request.form.get("shop_contact") or florist.shop_contact
+    
     db.session.commit()
-    return jsonify({"message": "Flower added", "id": new_flower.id}), 201
+    return jsonify({"message": "Flower added and shop updated", "id": new_flower.id}), 201
 
 # URL: GET /api/flowers
 @flowers_bp.route("", methods=["GET"])
@@ -63,7 +71,8 @@ def get_flowers():
         "price": f.price,
         "image_url": (f.image_url if (f.image_url and f.image_url.startswith('http')) else (request.url_root.rstrip('/') + f.image_url if f.image_url and f.image_url.startswith('/') else (request.url_root.rstrip('/') + '/static/uploads/' + f.image_url if f.image_url else None))),
         "description": f.description,
-        "shop_name": User.query.get(f.florist_id).name if User.query.get(f.florist_id) else "Unknown"
+        "shop_name": User.query.get(f.florist_id).name if User.query.get(f.florist_id) else "Unknown",
+        "florist_id": f.florist_id  # NEW: Added for buyers to fetch shop details
     } for f in flowers]), 200
 
 # NEW: URL: GET /api/flowers/<int:flower_id>
@@ -150,6 +159,13 @@ def update_flower(flower_id):
                 flower.image_url = url_for('static', filename=f'uploads/{filename}', _external=True)
             except Exception:
                 flower.image_url = request.url_root.rstrip('/') + f"/static/uploads/{filename}"
+        
+        # NEW: Update shop details for the florist
+        florist = User.query.get(florist_id)
+        if florist:
+            florist.shop_name = request.form.get("shop_name") or florist.shop_name
+            florist.shop_address = request.form.get("shop_address") or florist.shop_address
+            florist.shop_contact = request.form.get("shop_contact") or florist.shop_contact
     else:
         # Handle JSON request body
         data = request.get_json() or {}
@@ -163,7 +179,7 @@ def update_flower(flower_id):
             flower.stock_status = data["stock_status"]
     
     db.session.commit()
-    return jsonify({"message": "Flower updated", "id": flower.id}), 200
+    return jsonify({"message": "Flower and shop updated", "id": flower.id}), 200
 
 # URL: DELETE /api/flowers/<id>
 # Delete a flower (florist only)

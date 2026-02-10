@@ -5,12 +5,6 @@ import api from "../api/axios";
 export default function FloristDashboard({ user }) {
   const navigate = useNavigate();
 
-  const [shop, setShop] = useState({
-    shop_name: user.shop_name || "",
-    shop_address: user.shop_address || "",
-    shop_contact: user.shop_contact || ""
-  });
-
   const [flower, setFlower] = useState({
     name: "",
     price: "",
@@ -21,7 +15,6 @@ export default function FloristDashboard({ user }) {
   const [orders, setOrders] = useState([]);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [updatingShop, setUpdatingShop] = useState(false); // Added for shop update loading
 
   // Set auth token on mount
   useEffect(() => {
@@ -45,18 +38,6 @@ export default function FloristDashboard({ user }) {
       console.error("Failed to fetch orders:", err);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleShopUpdate = async () => {
-    setUpdatingShop(true);
-    try {
-      await api.put(`/auth/shop/${user.id}`, shop);
-      alert("Shop updated successfully");
-    } catch (err) {
-      alert("Failed to update shop");
-    } finally {
-      setUpdatingShop(false);
     }
   };
 
@@ -208,37 +189,6 @@ export default function FloristDashboard({ user }) {
         )}
       </div>
 
-      <div className="fd-section">
-        <h2>🏪 Shop Details</h2>
-        <div className="fd-form-row">
-          <input
-            type="text"
-            placeholder="Shop Name"
-            value={shop.shop_name}
-            onChange={(e) => setShop({ ...shop, shop_name: e.target.value })}
-          />
-        </div>
-        <div className="fd-form-row">
-          <input
-            type="text"
-            placeholder="Address"
-            value={shop.shop_address}
-            onChange={(e) => setShop({ ...shop, shop_address: e.target.value })}
-          />
-        </div>
-        <div className="fd-form-row">
-          <input
-            type="tel"
-            placeholder="Contact"
-            value={shop.shop_contact}
-            onChange={(e) => setShop({ ...shop, shop_contact: e.target.value })}
-          />
-        </div>
-        <button className="fd-btn primary" onClick={handleShopUpdate} disabled={updatingShop}>
-          {updatingShop ? "Saving..." : "💾 Save Shop Details"}
-        </button>
-      </div>
-
       {/* Order Detail Modal */}
       {selectedOrder && (
         <div className="fd-modal-overlay" onClick={() => setSelectedOrder(null)}>
@@ -291,140 +241,6 @@ export default function FloristDashboard({ user }) {
         </div>
       )}
 
-      <style>{`
-        .fd-order-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: 15px;
-        }
-
-        .fd-order-header h4 {
-          margin: 0 0 5px 0;
-        }
-
-        .fd-order-meta {
-          display: flex;
-          gap: 10px;
-        }
-
-        .status {
-          padding: 5px 10px;
-          border-radius: 4px;
-          font-size: 0.85em;
-          font-weight: 600;
-        }
-
-        .status.paid {
-          background: #d4edda;
-          color: #155724;
-        }
-
-        .status.pending {
-          background: #fff3cd;
-          color: #856404;
-        }
-
-        .status-pending {
-          background: #fff3cd;
-          color: #856404;
-          padding: 5px 10px;
-          border-radius: 4px;
-          font-size: 0.85em;
-          font-weight: 600;
-        }
-
-        .status-processing {
-          background: #cce5ff;
-          color: #004085;
-          padding: 5px 10px;
-          border-radius: 4px;
-          font-size: 0.85em;
-          font-weight: 600;
-        }
-
-        .status-delivered {
-          background: #d4edda;
-          color: #155724;
-          padding: 5px 10px;
-          border-radius: 4px;
-          font-size: 0.85em;
-          font-weight: 600;
-        }
-
-        .fd-buyer-info {
-          background: var(--accent-soft);
-          padding: 15px;
-          border-radius: 8px;
-          margin: 15px 0;
-        }
-
-        .fd-buyer-info h5 {
-          margin: 0 0 10px 0;
-          color: var(--primary-pink);
-        }
-
-        .info-grid {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 12px;
-        }
-
-        .info-grid div label {
-          display: block;
-          font-weight: 600;
-          color: var(--primary-pink);
-          font-size: 0.9em;
-          margin-bottom: 3px;
-        }
-
-        .info-grid div p {
-          margin: 0;
-          color: var(--dark-gray);
-        }
-
-        .fd-items-list {
-          background: var(--accent-light);
-          padding: 15px;
-          border-radius: 8px;
-          margin: 15px 0;
-        }
-
-        .fd-items-list h5 {
-          margin: 0 0 10px 0;
-          color: var(--primary-pink);
-        }
-
-        .item-row {
-          display: flex;
-          justify-content: space-between;
-          padding: 8px 0;
-          border-bottom: 1px solid var(--border-gray);
-        }
-
-        .item-row .price {
-          font-weight: 600;
-          color: var(--primary-pink);
-        }
-
-        .total-row {
-          display: flex;
-          justify-content: space-between;
-          padding: 10px 0;
-          font-size: 1.1em;
-        }
-
-        @media (max-width: 768px) {
-          .fd-order-header {
-            flex-direction: column;
-            align-items: flex-start;
-          }
-
-          .info-grid {
-            grid-template-columns: 1fr;
-          }
-        }
-      `}</style>
-    </div>
+      </div>
   );
 }
