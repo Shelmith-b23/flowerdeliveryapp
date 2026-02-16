@@ -202,9 +202,9 @@ class PesaPalPayment:
     
     def _get_callback_url(self):
         """Get the callback URL for PesaPal to return to after payment"""
-        callback_url = os.getenv("PESAPAL_CALLBACK_URL", "https://flora-x.pages.dev")
+        callback_url = os.getenv("PESAPAL_CALLBACK_URL", "https://flora-x.pages.dev/payment-callback")
         return callback_url
-
+    
     def _build_iframe_url(self, params):
         """Build the complete iframe URL with encoded parameters"""
         import base64
