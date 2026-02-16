@@ -71,7 +71,7 @@ export default function Register({ setUser }) {
           onChange={(e) => setRole(e.target.value)}
           className="auth-input"
         >
-          <option value="buyer">Buyer</option>
+          <option value="buyer">Customer</option>
           <option value="florist">Florist</option>
         </select>
 

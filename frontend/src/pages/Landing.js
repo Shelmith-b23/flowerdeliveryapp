@@ -15,7 +15,7 @@ export default function Landing() {
 
   return (
     <div style={{ textAlign: 'center', padding: '100px 20px' }}>
-      <h1>Fresh Flowers Delivered to Your Door</h1>
+      <h1>Fresh Flowers Delivered to Your Door Step</h1>
       <p>Beautiful arrangements from the best local florists.</p>
       <div style={{ marginTop: '30px' }}>
         <Link 
