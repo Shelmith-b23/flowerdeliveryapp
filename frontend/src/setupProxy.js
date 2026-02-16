@@ -5,7 +5,7 @@ module.exports = function(app) {
   app.use(
     '/api', // any request starting with /api
     createProxyMiddleware({
-      target: 'http://localhost:5000', // Local backend development
+      target: 'https://flowerdeliveryapp-aid0.onrender.com', // backend URL
       changeOrigin: true,
     })
   );
