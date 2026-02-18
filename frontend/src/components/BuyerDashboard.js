@@ -122,7 +122,7 @@ export default function BuyerDashboard({ user }) {
       {/* Header */}
       <div className="bd-header">
         <div>
-          <h1>👋 Welcome, {user?.name}!</h1>
+          <h1>Welcome, {user?.name}!</h1>
           <p className="bd-email">{user?.email}</p>
         </div>
         <button className="btn-danger" onClick={handleLogout}>
@@ -144,7 +144,7 @@ export default function BuyerDashboard({ user }) {
       {/* Featured Flowers Section */}
       <div className="bd-featured-section">
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
-          <h2>✨ Featured Flowers</h2>
+          <h2>Featured Flowers</h2>
           <Link to="/browse-flowers" className="btn-secondary" style={{ textDecoration: "none" }}>
             View All
           </Link>
