@@ -1,3 +1,4 @@
+// src/pages/FloristDashboard.js
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../api/axios";
@@ -32,7 +33,8 @@ export default function FloristDashboard({ user }) {
   const fetchOrders = async () => {
     setLoading(true);
     try {
-      const res = await api.get("/orders/florist");
+      // Updated URL: Added "/api" prefix to match backend route (/api/orders/florist)
+      const res = await api.get("api/orders/florist");
       setOrders(res.data);
     } catch (err) {
       console.error("Failed to fetch orders:", err);
@@ -43,7 +45,8 @@ export default function FloristDashboard({ user }) {
 
   const handleAddFlower = async () => {
     try {
-      await api.post("/flowers", {
+      // Updated URL: Added "/api" prefix to match backend route (/api/flowers)
+      await api.post("api/flowers", {
         ...flower,
         florist_id: user.id
       });
@@ -63,7 +66,8 @@ export default function FloristDashboard({ user }) {
 
   const handleUpdateOrderStatus = async (orderId, newStatus) => {
     try {
-      await api.put(`/orders/${orderId}/status`, { status: newStatus });
+      // Updated URL: Added "/api" prefix to match backend route (/api/orders/{orderId}/status)
+      await api.put(`api/orders/${orderId}/status`, { status: newStatus });
       alert("Order status updated");
       fetchOrders();
       setSelectedOrder(null);
