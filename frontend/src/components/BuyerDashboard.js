@@ -1,3 +1,4 @@
+// src/pages/BuyerDashboard.js
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import api from "../api/axios";
@@ -27,7 +28,8 @@ export default function BuyerDashboard({ user }) {
 
   const fetchOrders = async () => {
     try {
-      const res = await api.get("/orders/buyer");
+      // Updated URL: Added "/api" prefix to match backend route (/api/orders/buyer)
+      const res = await api.get("api/orders/buyer");
       setOrders(res.data);
     } catch (err) {
       console.error("Failed to fetch orders:", err);
@@ -38,7 +40,8 @@ export default function BuyerDashboard({ user }) {
 
   const fetchFeaturedFlowers = async () => {
     try {
-      const res = await api.get("/flowers");
+      // Updated URL: Added "/api" prefix to match backend route (/api/flowers)
+      const res = await api.get("api/flowers");
       // Get up to 6 featured flowers for display
       setFlowers(res.data.slice(0, 6));
     } catch (err) {
@@ -57,7 +60,8 @@ export default function BuyerDashboard({ user }) {
     }
     console.log("Fetching shop details for florist ID:", floristId);  // Debug log
     try {
-      const res = await api.get(`/auth/shop/${floristId}`);
+      // Updated URL: Added "/api" prefix to match backend route (/api/auth/shop/{floristId})
+      const res = await api.get(`api/auth/shop/${floristId}`);
       console.log("Shop details response:", res.data);  // Debug log
       setSelectedShop(res.data);
     } catch (err) {
@@ -180,7 +184,7 @@ export default function BuyerDashboard({ user }) {
                       className="bd-add-btn"
                       onClick={() => addToCart(flower)}
                     >
-                    
+                      Add to Cart
                     </button>
                   </div>
                 </div>
@@ -192,7 +196,7 @@ export default function BuyerDashboard({ user }) {
 
       {/* Orders Section */}
       <div className="bd-orders-section">
-        <h2> My Orders</h2>
+        <h2>My Orders</h2>
         {loading ? (
           <p className="bd-loading">Loading your orders...</p>
         ) : orders.length === 0 ? (
