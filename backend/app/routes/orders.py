@@ -5,10 +5,14 @@ from app.models import Order, OrderItem, Flower, User
 
 orders_bp = Blueprint("orders", __name__, url_prefix="/api/orders")
 
-@orders_bp.route("/create", methods=["POST"])
+@orders_bp.route("/create", methods=["POST", "OPTIONS"])
 @jwt_required()
 def create_order():
     """Create a new order from cart items"""
+    # Handle OPTIONS preflight quickly
+    if request.method == "OPTIONS":
+        return jsonify({"message": "OK"}), 200
+
     buyer_id = get_jwt_identity()
     data = request.get_json()
     
@@ -86,10 +90,14 @@ def create_order():
     }), 201
 
 
-@orders_bp.route("/<int:order_id>/pay", methods=["POST"])
+@orders_bp.route("/<int:order_id>/pay", methods=["POST", "OPTIONS"])
 @jwt_required()
 def mark_order_paid(order_id):
     """Mark order as paid"""
+    # Handle OPTIONS preflight quickly
+    if request.method == "OPTIONS":
+        return jsonify({"message": "OK"}), 200
+
     buyer_id = get_jwt_identity()
     
     order = Order.query.get(order_id)
@@ -106,10 +114,14 @@ def mark_order_paid(order_id):
     return jsonify({"message": "Payment confirmed", "order_id": order.id}), 200
 
 
-@orders_bp.route("/buyer", methods=["GET"])
+@orders_bp.route("/buyer", methods=["GET", "OPTIONS"])
 @jwt_required()
 def get_buyer_orders():
     """Get all orders for the logged-in buyer"""
+    # Handle OPTIONS preflight quickly
+    if request.method == "OPTIONS":
+        return jsonify({"message": "OK"}), 200
+
     buyer_id = get_jwt_identity()
     
     orders = Order.query.filter_by(buyer_id=buyer_id).order_by(Order.created_at.desc()).all()
@@ -131,10 +143,14 @@ def get_buyer_orders():
     } for order in orders]), 200
 
 
-@orders_bp.route("/florist", methods=["GET"])
+@orders_bp.route("/florist", methods=["GET", "OPTIONS"])
 @jwt_required()
 def get_florist_orders():
     """Get all orders containing this florist's flowers"""
+    # Handle OPTIONS preflight quickly
+    if request.method == "OPTIONS":
+        return jsonify({"message": "OK"}), 200
+
     florist_id = get_jwt_identity()
     
     # Get order IDs where this florist has items
@@ -172,10 +188,14 @@ def get_florist_orders():
     return jsonify(result), 200
 
 
-@orders_bp.route("/<int:order_id>/status", methods=["PUT"])
+@orders_bp.route("/<int:order_id>/status", methods=["PUT", "OPTIONS"])
 @jwt_required()
 def update_order_status(order_id):
     """Update order status (for florist)"""
+    # Handle OPTIONS preflight quickly
+    if request.method == "OPTIONS":
+        return jsonify({"message": "OK"}), 200
+
     florist_id = get_jwt_identity()
     data = request.get_json()
     
@@ -195,4 +215,4 @@ def update_order_status(order_id):
     order.status = new_status
     db.session.commit()
     
-    return jsonify({"message": "Order status updated", "status": new_status}), 200    
+    return jsonify({"message": "Order status updated", "status": new_status}), 200
