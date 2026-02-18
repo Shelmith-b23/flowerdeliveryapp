@@ -14,7 +14,8 @@ export default function Login({ setUser }) {
     setError("");
     setLoading(true);
     try {
-      const res = await api.post("auth/login/", { email, password });
+      // Updated URL: Added "/api" prefix to match your backend route (/api/auth/login/)
+      const res = await api.post("api/auth/login/", { email, password });
       const { token, user } = res.data;
 
       localStorage.setItem("token", token);
