@@ -1,3 +1,4 @@
+// src/pages/FloristFlowerManagement.js
 import { useState, useEffect } from "react";
 import api from "../api/axios";
 import "../styles/FloristFlowerManagement.css";
@@ -47,7 +48,8 @@ export default function FloristFlowerManagement({ user }) {  // Pass user prop f
   const fetchFlowers = async () => {
     setLoading(true);
     try {
-      const res = await api.get("/flowers/florist/my-flowers");
+      // Updated URL: Added "/api" prefix to match backend route (/api/flowers/florist/my-flowers)
+      const res = await api.get("api/flowers/florist/my-flowers");
       setFlowers(res.data);
     } catch (err) {
       setError("Failed to load flowers");
@@ -172,12 +174,12 @@ export default function FloristFlowerManagement({ user }) {  // Pass user prop f
       }
 
       if (editingId) {
-        // Update existing flower
-        await api.put(`/flowers/${editingId}`, submitData);
+        // Updated URL: Added "/api" prefix to match backend route (/api/flowers/{editingId})
+        await api.put(`api/flowers/${editingId}`, submitData);
         setSuccess("Flower and shop updated successfully");
       } else {
-        // Add new flower
-        await api.post("/flowers", submitData);
+        // Updated URL: Added "/api" prefix to match backend route (/api/flowers)
+        await api.post("api/flowers", submitData);
         setSuccess("Flower added and shop updated successfully");
       }
       
@@ -193,7 +195,8 @@ export default function FloristFlowerManagement({ user }) {  // Pass user prop f
   const handleDelete = async (flowerId) => {
     if (window.confirm("Are you sure you want to delete this flower?")) {
       try {
-        await api.delete(`/flowers/${flowerId}`);
+        // Updated URL: Added "/api" prefix to match backend route (/api/flowers/{flowerId})
+        await api.delete(`api/flowers/${flowerId}`);
         setSuccess("Flower deleted successfully");
         fetchFlowers();
       } catch (err) {
@@ -206,7 +209,8 @@ export default function FloristFlowerManagement({ user }) {  // Pass user prop f
   const toggleStockStatus = async (flowerId, currentStatus) => {
     const newStatus = currentStatus === "in_stock" ? "out_of_stock" : "in_stock";
     try {
-      await api.put(`/flowers/${flowerId}`, {
+      // Updated URL: Added "/api" prefix to match backend route (/api/flowers/{flowerId})
+      await api.put(`api/flowers/${flowerId}`, {
         stock_status: newStatus
       });
       setSuccess(`Stock status updated to ${newStatus.replace("_", " ")}`);
