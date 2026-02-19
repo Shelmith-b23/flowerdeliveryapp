@@ -73,7 +73,7 @@ export default function FloristDashboard({ user }) {
         }} className="btn-danger">Logout</button>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '30px', marginTop: '30px' }}>
+      <div>
         
         <section className="fd-add-flower">
           <h3>Add New Flower</h3>
