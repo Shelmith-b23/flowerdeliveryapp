@@ -24,12 +24,15 @@ export default function Login({ setUser }) {
     setLoading(true);
 
     try {
-      // ✅ DO NOT add "api/" here
-      const res = await api.post("/auth/login/", { email, password });
+      // ✅ FIXED: Removed trailing slash
+      const res = await api.post("/auth/login", {
+        email,
+        password,
+      });
 
       const { token, user } = res.data;
 
-      // Save token
+      // Save token globally
       api.setAuthToken(token);
       localStorage.setItem("user", JSON.stringify(user));
 
