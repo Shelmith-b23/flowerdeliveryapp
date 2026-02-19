@@ -1,7 +1,6 @@
 // src/api/axios.js
 
-// 🔥 IMPORTANT:
-// This MUST be your Render backend URL + /api
+// ✅ Backend base URL (Render) + /api
 const baseURL =
   process.env.REACT_APP_API_URL?.replace(/\/$/, "") ||
   "https://flowerdeliveryapp-aid0.onrender.com/api";
@@ -12,7 +11,7 @@ const defaultHeaders = {
 
 let globalHeaders = {};
 
-// Load stored token on startup
+// Load stored token on app start
 const storedToken = localStorage.getItem("token");
 if (storedToken) {
   globalHeaders["Authorization"] = `Bearer ${storedToken}`;
@@ -28,12 +27,11 @@ async function request(method, url, data = null, options = {}) {
     ...(options.headers || {}),
   };
 
-  // Remove content-type for FormData (browser sets it automatically)
+  // Remove content-type for FormData
   if (data instanceof FormData) {
     delete headers["Content-Type"];
   }
 
-  // Clean URL handling
   const cleanBase = baseURL.replace(/\/$/, "");
   const cleanUrl = url.replace(/^\//, "");
   const finalURL = `${cleanBase}/${cleanUrl}`;
@@ -57,10 +55,12 @@ async function request(method, url, data = null, options = {}) {
       const error = new Error(
         parsed?.error || parsed?.message || "Request failed"
       );
+
       error.response = {
         data: parsed,
         status: response.status,
       };
+
       throw error;
     }
 
