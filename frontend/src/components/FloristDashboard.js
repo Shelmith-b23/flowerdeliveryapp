@@ -1,11 +1,11 @@
-// src/pages/FloristDashboard.js
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../api/axios";
 
 export default function FloristDashboard({ user }) {
   const navigate = useNavigate();
-
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [flower, setFlower] = useState({
     name: "",
     price: "",
@@ -13,29 +13,18 @@ export default function FloristDashboard({ user }) {
     description: ""
   });
 
-  const [orders, setOrders] = useState([]);
-  const [selectedOrder, setSelectedOrder] = useState(null);
-  const [loading, setLoading] = useState(false);
-
-  // Set auth token on mount
-  useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (token) {
-      api.setAuthToken(token);
-    }
-  }, []);
-
-  // Fetch orders when component mounts
+  // 1. Initial Load
   useEffect(() => {
     fetchOrders();
   }, []);
 
+  // 2. Fetch Orders (Cleanup: Removed "api/" prefix)
   const fetchOrders = async () => {
     setLoading(true);
     try {
-      // Updated URL: Added "/api" prefix to match backend route (/api/orders/florist)
-      const res = await api.get("api/orders/florist");
-      setOrders(res.data);
+      const res = await api.get("orders/florist");
+      // res.data is already parsed by our axios helper
+      setOrders(Array.isArray(res.data) ? res.data : []);
     } catch (err) {
       console.error("Failed to fetch orders:", err);
     } finally {
@@ -43,208 +32,121 @@ export default function FloristDashboard({ user }) {
     }
   };
 
-  const handleAddFlower = async () => {
+  // 3. Add Flower (Cleanup: Removed "api/" prefix)
+  const handleAddFlower = async (e) => {
+    e.preventDefault();
     try {
-      // Updated URL: Added "/api" prefix to match backend route (/api/flowers)
-      await api.post("api/flowers", {
+      await api.post("flowers", {
         ...flower,
         florist_id: user.id
       });
-      alert("Flower added successfully");
-
-      // Clear form after submit
-      setFlower({
-        name: "",
-        price: "",
-        image_url: "",
-        description: ""
-      });
+      alert("Flower added successfully!");
+      setFlower({ name: "", price: "", image_url: "", description: "" });
     } catch (err) {
-      alert("Failed to add flower");
+      alert("Failed to add flower. Check console for details.");
     }
   };
 
-  const handleUpdateOrderStatus = async (orderId, newStatus) => {
+  // 4. Update Order Status
+  const handleUpdateStatus = async (orderId, currentStatus) => {
+    const statusMap = {
+      "pending": "processing",
+      "processing": "delivered",
+      "delivered": "delivered"
+    };
+    
+    const nextStatus = statusMap[currentStatus] || "pending";
+    
     try {
-      // Updated URL: Added "/api" prefix to match backend route (/api/orders/{orderId}/status)
-      await api.put(`api/orders/${orderId}/status`, { status: newStatus });
-      alert("Order status updated");
-      fetchOrders();
-      setSelectedOrder(null);
+      await api.put(`orders/${orderId}/status`, { status: nextStatus });
+      fetchOrders(); // Refresh list
     } catch (err) {
-      alert("Failed to update order status");
+      alert("Error updating status.");
     }
   };
 
   const handleLogout = () => {
+    api.setAuthToken(null);
     localStorage.removeItem("token");
     localStorage.removeItem("user");
     navigate("/login");
   };
 
   return (
-    <div className="fd-container">
-      <div className="fd-header">
+    <div className="fd-container" style={{ padding: '20px', maxWidth: '1200px', margin: '0 auto' }}>
+      {/* Header */}
+      <div className="fd-header" style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '2px solid #eee', paddingBottom: '20px' }}>
         <div>
-          <h1>Florist</h1>
-          <p className="sub">{user.shop_name || user.name}</p>
+          <h1>Florist Portal</h1>
+          <p>Logged in as: <strong>{user?.shop_name || user?.name}</strong></p>
         </div>
-        <div className="fd-header-actions">
-          <button className="fd-nav-btn" onClick={() => navigate("/florist/manage-flowers")}>
-            🌸 Manage Flowers
-          </button>
-          <button className="fd-logout" onClick={handleLogout}>
-            Logout
-          </button>
-        </div>
+        <button onClick={handleLogout} className="btn-danger">Logout</button>
       </div>
 
-      <div className="fd-section">
-        <h2>📦 Incoming Orders</h2>
-        {loading ? (
-          <p>Loading orders...</p>
-        ) : orders.length === 0 ? (
-          <p style={{ color: "var(--muted-gray)" }}>No orders yet</p>
-        ) : (
-          <div className="fd-orders">
-            {orders.map(order => (
-              <div key={order.id} className="fd-order">
-                <div className="fd-order-header">
-                  <div>
-                    <h4>Order #{order.id}</h4>
-                    <p style={{ fontSize: "0.9em", color: "var(--muted-gray)" }}>
-                      {new Date(order.created_at).toLocaleDateString()}
-                    </p>
-                  </div>
-                  <div className="fd-order-meta">
-                    <span className={`status ${order.paid ? "paid" : "pending"}`}>
-                      {order.paid ? "✅ Paid" : "⏳ Pending Payment"}
-                    </span>
-                    <span className={`status-${order.status}`}>
-                      {order.status.toUpperCase()}
-                    </span>
-                  </div>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '30px', marginTop: '30px' }}>
+        
+        {/* Left Column: Add Flower Form */}
+        <section className="fd-add-flower">
+          <h3>🌸 Add New Flower</h3>
+          <form onSubmit={handleAddFlower} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <input 
+              type="text" placeholder="Flower Name" required
+              value={flower.name} onChange={(e) => setFlower({...flower, name: e.target.value})}
+            />
+            <input 
+              type="number" placeholder="Price (KSh)" required
+              value={flower.price} onChange={(e) => setFlower({...flower, price: e.target.value})}
+            />
+            <input 
+              type="text" placeholder="Image URL"
+              value={flower.image_url} onChange={(e) => setFlower({...flower, image_url: e.target.value})}
+            />
+            <textarea 
+              placeholder="Description"
+              value={flower.description} onChange={(e) => setFlower({...flower, description: e.target.value})}
+            />
+            <button type="submit" className="btn-primary">List Flower</button>
+          </form>
+        </section>
+
+        {/* Right Column: Incoming Orders */}
+        <section className="fd-orders">
+          <h3>📦 Incoming Orders</h3>
+          {loading ? <p>Loading orders...</p> : orders.length === 0 ? <p>No orders yet.</p> : (
+            orders.map(order => (
+              <div key={order.id} style={{ border: '1px solid #ddd', padding: '15px', borderRadius: '8px', marginBottom: '15px', backgroundColor: '#f9f9f9' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <strong>Order #{order.id}</strong>
+                  <span className={`status-badge ${order.status}`}>{order.status.toUpperCase()}</span>
+                </div>
+                
+                <div style={{ fontSize: '0.9rem', margin: '10px 0' }}>
+                  <p>👤 <strong>Buyer:</strong> {order.buyer_name}</p>
+                  <p>📍 <strong>Deliver to:</strong> {order.delivery_address}</p>
                 </div>
 
-                <div className="fd-buyer-info">
-                  <h5>👤 Buyer Information</h5>
-                  <div className="info-grid">
-                    <div>
-                      <label>Full Name:</label>
-                      <p>{order.buyer_name}</p>
-                    </div>
-                    <div>
-                      <label>Email:</label>
-                      <p>{order.buyer_email}</p>
-                    </div>
-                    <div>
-                      <label>Phone:</label>
-                      <p>{order.buyer_phone}</p>
-                    </div>
-                    <div>
-                      <label>Delivery Address:</label>
-                      <p>{order.delivery_address}</p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="fd-items-list">
-                  <h5>🌸 Items</h5>
-                  {order.items.map(item => (
-                    <div key={item.id} className="item-row">
-                      <span>{item.flower_name} × {item.quantity}</span>
-                      <span className="price">KSh {(item.unit_price * item.quantity).toFixed(2)}</span>
+                <div className="order-items" style={{ background: '#fff', padding: '10px', borderRadius: '4px' }}>
+                  {order.items.map((item, idx) => (
+                    <div key={idx} style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span>{item.flower_name} x{item.quantity}</span>
+                      <span>KSh {item.unit_price}</span>
                     </div>
                   ))}
-                  <hr style={{ margin: "10px 0" }} />
-                  <div className="total-row">
-                    <strong>Total:</strong>
-                    <strong>KSh {order.total_price.toFixed(2)}</strong>
-                  </div>
                 </div>
 
-                <div className="fd-actions">
-                  <button
-                    className="fd-btn"
-                    onClick={() => setSelectedOrder(order)}
+                {order.status !== "delivered" && (
+                  <button 
+                    onClick={() => handleUpdateStatus(order.id, order.status)}
+                    style={{ marginTop: '10px', width: '100%', padding: '8px', cursor: 'pointer' }}
                   >
-                    View Details
+                    Mark as {order.status === "pending" ? "Processing" : "Delivered"}
                   </button>
-                  {order.status !== "delivered" && (
-                    <button
-                      className="fd-btn primary"
-                      onClick={() => {
-                        const nextStatus = 
-                          order.status === "pending" ? "processing" :
-                          order.status === "processing" ? "delivered" : "pending";
-                        handleUpdateOrderStatus(order.id, nextStatus);
-                      }}
-                    >
-                      Mark as {
-                        order.status === "pending" ? "Processing" :
-                        order.status === "processing" ? "Delivered" : "Pending"
-                      }
-                    </button>
-                  )}
-                </div>
+                )}
               </div>
-            ))}
-          </div>
-        )}
+            ))
+          )}
+        </section>
       </div>
-
-      {/* Order Detail Modal */}
-      {selectedOrder && (
-        <div className="fd-modal-overlay" onClick={() => setSelectedOrder(null)}>
-          <div className="fd-modal" onClick={(e) => e.stopPropagation()}>
-            <h3>Order #{selectedOrder.id} Details</h3>
-            
-            <div className="fd-form-desc">
-              <h5>📋 Buyer Information</h5>
-              <p><strong>Name:</strong> {selectedOrder.buyer_name}</p>
-              <p><strong>Email:</strong> {selectedOrder.buyer_email}</p>
-              <p><strong>Phone:</strong> {selectedOrder.buyer_phone}</p>
-              <p><strong>Address:</strong> {selectedOrder.delivery_address}</p>
-              <p><strong>Payment Status:</strong> {selectedOrder.paid ? "✅ Paid" : "⏳ Pending"}</p>
-              <p><strong>Order Status:</strong> {selectedOrder.status.toUpperCase()}</p>
-            </div>
-
-            <div className="fd-form-desc">
-              <h5>🌸 Items</h5>
-              {selectedOrder.items.map(item => (
-                <div key={item.id} style={{ marginBottom: "10px" }}>
-                  <p>{item.flower_name}</p>
-                  <p style={{ fontSize: "0.9em", color: "var(--muted-gray)" }}>
-                    Quantity: {item.quantity} × KSh {item.unit_price} = KSh {(item.quantity * item.unit_price).toFixed(2)}
-                  </p>
-                </div>
-              ))}
-              <hr />
-              <p><strong>Total: KSh {selectedOrder.total_price.toFixed(2)}</strong></p>
-            </div>
-
-            <div className="fd-form-actions">
-              <button className="btn cancel" onClick={() => setSelectedOrder(null)}>
-                Close
-              </button>
-              {selectedOrder.status !== "delivered" && (
-                <button 
-                  className="btn save"
-                  onClick={() => {
-                    const nextStatus = 
-                      selectedOrder.status === "pending" ? "processing" :
-                      selectedOrder.status === "processing" ? "delivered" : "pending";
-                    handleUpdateOrderStatus(selectedOrder.id, nextStatus);
-                  }}
-                >
-                  Mark as Delivered
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      </div>
+    </div>
   );
 }

@@ -73,7 +73,7 @@ export default function BuyerDashboard({ user }) {
         
         <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
           {/* ✅ CHECKOUT BUTTON */}
-          <Link to="/checkout" className="btn-checkout" style={{ backgroundColor: '#2e7d32', color: 'white', padding: '10px 20px', borderRadius: '5px', textDecoration: 'none', fontWeight: 'bold' }}>
+          <Link to="/checkout" className="btn-checkout" style={{ backgroundColor: '#8b0d0d', color: 'white', padding: '10px 20px', borderRadius: '5px', textDecoration: 'none', fontWeight: 'bold' }}>
             🛒 Checkout ({cartCount})
           </Link>
           <button className="btn-danger" onClick={handleLogout}>Logout</button>
