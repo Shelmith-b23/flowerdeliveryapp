@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify
-from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
+from flask_jwt_extended import create_access_token
 from sqlalchemy.exc import OperationalError
 from ..models import User
 from .. import db
@@ -7,21 +7,15 @@ from .. import db
 auth_bp = Blueprint("auth_bp", __name__)
 
 # ======================
-# REGISTER -> Final URL: /api/auth/register
+# REGISTER -> /api/auth/register
 # ======================
-# Added "OPTIONS" to methods to satisfy CORS preflight checks
-@auth_bp.route("/register", methods=["POST", "OPTIONS"])
+@auth_bp.route("/register", methods=["POST"])
 def register():
-    # Handle the OPTIONS preflight request immediately
-    if request.method == "OPTIONS":
-        return jsonify({"message": "OK"}), 200
-
     try:
         data = request.get_json()
         if not data:
             return jsonify({"error": "No data provided"}), 400
 
-        # Check if user already exists
         existing_user = User.query.filter_by(email=data["email"]).first()
         if existing_user:
             return jsonify({"error": "Email already exists"}), 409
@@ -37,40 +31,25 @@ def register():
         db.session.commit()
         return jsonify({"message": "User registered successfully"}), 201
     
-    except OperationalError as e:
-        db.session.rollback()
-        print(f"[ERROR] Database connection error during registration: {str(e)}")
-        return jsonify({"error": "Database connection error. Please try again."}), 503
     except Exception as e:
         db.session.rollback()
-        print(f"[ERROR] Registration error: {str(e)}")
-        return jsonify({"error": "Registration failed. Please try again."}), 500
-
+        return jsonify({"error": "Registration failed"}), 500
 
 # ======================
-# LOGIN -> Final URL: /api/auth/login
+# LOGIN -> /api/auth/login
 # ======================
-# Added "OPTIONS" to methods to satisfy CORS preflight checks
-@auth_bp.route("/login", methods=["POST", "OPTIONS"])
+@auth_bp.route("/login", methods=["POST"])
 def login():
-    # Handle the OPTIONS preflight request immediately
-    if request.method == "OPTIONS":
-        return jsonify({"message": "OK"}), 200
-
     try:
         data = request.get_json()
         if not data:
             return jsonify({"error": "No data provided"}), 400
 
-        email = data.get("email")
-        password = data.get("password")
+        user = User.query.filter_by(email=data.get("email")).first()
 
-        user = User.query.filter_by(email=email).first()
-
-        if not user or not user.check_password(password):
+        if not user or not user.check_password(data.get("password")):
             return jsonify({"error": "Invalid email or password"}), 401
 
-        # Flask-JWT-Extended usually expects a string for identity
         access_token = create_access_token(identity=str(user.id))
 
         return jsonify({
@@ -80,76 +59,10 @@ def login():
                 "name": user.name,
                 "email": user.email,
                 "role": user.role,
-                # Include shop details for florists
-                "shop_name": user.shop_name if user.role == "florist" else None,
-                "shop_address": user.shop_address if user.role == "florist" else None,
-                "shop_contact": user.shop_contact if user.role == "florist" else None
+                "shop_name": getattr(user, 'shop_name', None),
+                "shop_address": getattr(user, 'shop_address', None)
             }
         }), 200
     
-    except OperationalError as e:
-        db.session.rollback()
-        print(f"[ERROR] Database connection error during login: {str(e)}")
-        return jsonify({"error": "Database connection error. Please try again."}), 503
     except Exception as e:
-        db.session.rollback()
-        print(f"[ERROR] Login error: {str(e)}")
-        return jsonify({"error": "Login failed. Please try again."}), 500
-
-
-# ======================
-# GET SHOP DETAILS -> Final URL: /api/auth/shop/<int:user_id>
-# ======================
-# Public endpoint for buyers to view shop details
-@auth_bp.route("/shop/<int:user_id>", methods=["GET"])
-def get_shop_details(user_id):
-    user = User.query.get(user_id)
-    if not user or user.role != "florist":
-        return jsonify({"error": "Shop not found"}), 404
-    
-    return jsonify({
-        "shop_name": user.shop_name,
-        "shop_address": user.shop_address,
-        "shop_contact": user.shop_contact
-    }), 200
-
-
-# ======================
-# UPDATE SHOP DETAILS -> Final URL: /api/auth/shop/<int:user_id>
-# ======================
-# For florists to update their shop details
-@auth_bp.route("/shop/<int:user_id>", methods=["PUT", "OPTIONS"])
-@jwt_required()
-def update_shop(user_id):
-    # Handle the OPTIONS preflight request immediately
-    if request.method == "OPTIONS":
-        return jsonify({"message": "OK"}), 200
-
-    current_user_id = get_jwt_identity()
-    if int(current_user_id) != user_id:
-        return jsonify({"error": "Unauthorized"}), 403
-
-    user = User.query.get(user_id)
-    if not user or user.role != "florist":
-        return jsonify({"error": "User not found"}), 404
-
-    try:
-        data = request.get_json() or {}
-        if "shop_name" in data:
-            user.shop_name = data["shop_name"]
-        if "shop_address" in data:
-            user.shop_address = data["shop_address"]
-        if "shop_contact" in data:
-            user.shop_contact = data["shop_contact"]
-        
-        db.session.commit()
-        return jsonify({"message": "Shop updated"}), 200
-    
-    except OperationalError as e:
-        db.session.rollback()
-        print(f"[ERROR] Database connection error during shop update: {str(e)}")
-        return jsonify({"error": "Database connection error. Please try again."}), 503
-    except Exception as e:
-        db.session.rollback()
-        print(f"[ERROR] Shop update error: {str(e)}")
-        return jsonify({"error": "Shop update failed. Please try again."}), 500
+        return jsonify({"error": "Login failed"}), 500

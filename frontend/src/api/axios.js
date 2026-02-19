@@ -1,95 +1,65 @@
 // src/api/axios.js
 
-// ✅ Backend base URL (Render) + /api
-const baseURL =
-  process.env.REACT_APP_API_URL?.replace(/\/$/, "") ||
-  "https://flowerdeliveryapp-aid0.onrender.com/api";
+// 1. Get the URL and strip any accidental double quotes or trailing slashes
+const rawBaseURL = process.env.REACT_APP_API_URL || "https://flowerdeliveryapp-aid0.onrender.com/api";
+const baseURL = rawBaseURL.replace(/['"]+/g, '').replace(/\/$/, "");
 
-const defaultHeaders = {
+let globalHeaders = {
   "Content-Type": "application/json",
 };
 
-let globalHeaders = {};
-
-// Load stored token on app start
-const storedToken = localStorage.getItem("token");
-if (storedToken) {
-  globalHeaders["Authorization"] = `Bearer ${storedToken}`;
+// Load token from storage on boot
+const token = localStorage.getItem("token");
+if (token) {
+  globalHeaders["Authorization"] = `Bearer ${token}`;
 }
 
-/**
- * Core request handler
- */
-async function request(method, url, data = null, options = {}) {
-  const headers = {
-    ...defaultHeaders,
-    ...globalHeaders,
-    ...(options.headers || {}),
+async function request(method, endpoint, data = null) {
+  // Ensure the endpoint doesn't have a leading slash
+  const cleanEndpoint = endpoint.replace(/^\//, "");
+  const finalURL = `${baseURL}/${cleanEndpoint}`;
+
+  const config = {
+    method: method.toUpperCase(),
+    headers: { ...globalHeaders },
   };
 
-  // Remove content-type for FormData
-  if (data instanceof FormData) {
-    delete headers["Content-Type"];
+  if (data) {
+    config.body = JSON.stringify(data);
   }
 
-  const cleanBase = baseURL.replace(/\/$/, "");
-  const cleanUrl = url.replace(/^\//, "");
-  const finalURL = `${cleanBase}/${cleanUrl}`;
-
   try {
-    const response = await fetch(finalURL, {
-      method,
-      headers,
-      body:
-        data instanceof FormData
-          ? data
-          : data
-          ? JSON.stringify(data)
-          : null,
-      ...options,
-    });
-
-    const parsed = await response.json().catch(() => null);
+    const response = await fetch(finalURL, config);
+    
+    // Handle empty responses
+    const text = await response.text();
+    const parsed = text ? JSON.parse(text) : {};
 
     if (!response.ok) {
-      const error = new Error(
-        parsed?.error || parsed?.message || "Request failed"
-      );
-
-      error.response = {
-        data: parsed,
-        status: response.status,
-      };
-
+      const error = new Error(parsed.error || "API Request Failed");
+      error.response = { status: response.status, data: parsed };
       throw error;
     }
 
     return { data: parsed };
   } catch (error) {
-    console.error("API Error:", error);
+    console.error(`Fetch Error [${method}] ${finalURL}:`, error);
     throw error;
   }
 }
 
 const api = {
-  get: (url) => request("GET", url),
-  post: (url, data) => request("POST", url, data),
-  put: (url, data) => request("PUT", url, data),
-  delete: (url) => request("DELETE", url),
-
-  /**
-   * Set or remove auth token
-   */
+  post: (endpoint, data) => request("POST", endpoint, data),
+  get: (endpoint) => request("GET", endpoint),
   setAuthToken: (token) => {
-    if (!token) {
+    if (token) {
+      globalHeaders["Authorization"] = `Bearer ${token}`;
+      localStorage.setItem("token", token);
+    } else {
       delete globalHeaders["Authorization"];
       localStorage.removeItem("token");
-      return;
     }
-
-    globalHeaders["Authorization"] = `Bearer ${token}`;
-    localStorage.setItem("token", token);
-  },
+  }
 };
 
 export default api;
