@@ -1,5 +1,6 @@
 import os
 import sys
+import flask
 from flask import Flask, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
@@ -18,78 +19,42 @@ def create_app():
     from .config import Config
     app.config.from_object(Config)
     
-    # Debug: print resolved DB URI
     print(f"[DEBUG] SQLALCHEMY_DATABASE_URI={app.config.get('SQLALCHEMY_DATABASE_URI')}", file=sys.stderr)
 
     # Init extensions
-    try:
-        db.init_app(app)
-    except Exception as e:
-        print(f"[ERROR] db.init_app failed: {e}", file=sys.stderr)
-        raise
-    
+    db.init_app(app)
     migrate.init_app(app, db)
     jwt.init_app(app)
 
-    # 🔹 AUTO-RUN MIGRATIONS ON STARTUP (PRODUCTION ONLY)
-    # Ensures database schema is always up-to-date
-    if os.getenv('FLASK_ENV') == 'production':
-        with app.app_context():
-            try:
-                from . import models  # Import models
-                from alembic.config import Config as AlembicConfig
-                from alembic import command
-                
-                # Set up Alembic config
-                migrations_dir = os.path.join(os.path.dirname(__file__), '..', 'migrations')
-                alembic_ini = os.path.join(migrations_dir, 'alembic.ini')
-                
-                alembic_cfg = AlembicConfig(alembic_ini)
-                alembic_cfg.set_main_option(
-                    'sqlalchemy.url',
-                    app.config.get('SQLALCHEMY_DATABASE_URI') or 'sqlite:///app.db'
-                )
-                
-                # Run upgrade to head revision
-                command.upgrade(alembic_cfg, 'head')
-                print("[INFO] Database migrations applied successfully.", file=sys.stderr)
-            except Exception as e:
-                print(f"[WARNING] Auto-migration failed: {e}", file=sys.stderr)
-                # Log but don't fail startup
-
-    # CORS configuration - read allowed origins from config if present
-    # fall back to a safe default list used during local development
-    cors_origins = app.config.get(
-        "CORS_ORIGINS",
-        [
-            "https://flora-x.pages.dev",
-            "https://flowerdeliveryapp-aid0.onrender.com",
-            "http://localhost:3000",
-        ],
-    )
-
-    # Use Flask-CORS to ensure preflight (OPTIONS) responses include
-    # the required Access-Control-* headers. For debugging, apply a
-    # permissive global rule to quickly verify CORS is working behind
-    # the hosting/proxy. Revert to a scoped rule before production.
+    # CORS configuration (specific origins + credentials)
     CORS(
         app,
         resources={
             r"/*": {
-                "origins": "*",
+                "origins": [
+                    "http://localhost:3000",
+                    "https://flora-x.pages.dev"
+                ],
                 "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-                "allow_headers": ["Content-Type", "Authorization"],
+                "allow_headers": ["Content-Type", "Authorization"]
             }
         },
-        supports_credentials=False,
+        supports_credentials=True  # ✅ Allow Authorization headers
     )
+
+    # Handle OPTIONS preflight globally
+    @app.before_request
+    def handle_options():
+        if flask.request.method == "OPTIONS":
+            resp = flask.make_response()
+            resp.status_code = 200
+            return resp
 
     app.url_map.strict_slashes = False
 
-    # 🔹 GLOBAL ERROR HANDLERS
+    # Global error handlers
     @app.errorhandler(OperationalError)
     def handle_database_error(e):
-        """Handle database connection errors"""
         db.session.rollback()
         print(f"[ERROR] Database operational error: {str(e)}", file=sys.stderr)
         return jsonify({
@@ -99,18 +64,15 @@ def create_app():
 
     @app.errorhandler(404)
     def handle_not_found(e):
-        """Handle 404 errors"""
         return jsonify({"error": "Not found"}), 404
 
     @app.errorhandler(500)
     def handle_internal_error(e):
-        """Handle unhandled 500 errors"""
         db.session.rollback()
         print(f"[ERROR] Unhandled error: {str(e)}", file=sys.stderr)
         return jsonify({"error": "Internal server error"}), 500
 
-    # 🔹 HEALTH CHECK ROUTE
-    # Prevents 404 when opening the base backend URL
+    # Health check
     @app.route('/')
     def index():
         return jsonify({"status": "online", "message": "Flower Delivery API is running"}), 200
