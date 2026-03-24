@@ -25,7 +25,13 @@ async function request(method, endpoint, data = null) {
   };
 
   if (data) {
-    config.body = JSON.stringify(data);
+    // If we're sending FormData (file uploads), allow browser to set the multipart boundary
+    if (data instanceof FormData) {
+      config.body = data;
+      delete config.headers["Content-Type"];
+    } else {
+      config.body = JSON.stringify(data);
+    }
   }
 
   try {
