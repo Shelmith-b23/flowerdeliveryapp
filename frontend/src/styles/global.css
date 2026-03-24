@@ -90,6 +90,21 @@ h3 { font-family: var(--font-serif); font-size: 1.1rem; }
   gap: 20px;
 }
 
+.auth-success-box {
+  background: #f0fdf4;
+  color: #166534;
+  padding: 12px;
+  font-size: 12px;
+  border-left: 2px solid #166534;
+  margin-bottom: 20px;
+  line-height: 1.4;
+}
+
+/* Ensure the form doesn't overlap when messages appear */
+.auth-card {
+  transition: height 0.3s ease;
+}
+
 .fora-input, input, textarea, select {
   width: 100%;
   padding: 12px 0;
@@ -105,6 +120,7 @@ h3 { font-family: var(--font-serif); font-size: 1.1rem; }
   outline: none;
   border-bottom-color: var(--fora-dark);
 }
+
 
 /* ===== 6. EDITORIAL BUTTONS ===== */
 .btn-fora, .auth-button {
@@ -263,3 +279,46 @@ h3 { font-family: var(--font-serif); font-size: 1.1rem; }
 /* ===== 12. SCROLLBAR ===== */
 ::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-thumb { background: #d1d1d1; }
+
+/* Password Utilities */
+.eye-toggle {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--fora-slate);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  font-weight: 600;
+  transition: var(--transition);
+}
+
+.eye-toggle:hover {
+  color: var(--fora-dark);
+}
+
+.forgot-link {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--fora-slate);
+  text-decoration: none;
+  transition: var(--transition);
+}
+
+.forgot-link:hover {
+  color: var(--fora-dark);
+  text-decoration: underline;
+}
+
+/* Ensure password input has room for the toggle */
+input[type="password"], 
+input[type="text"] {
+  width: 100%;
+}
+

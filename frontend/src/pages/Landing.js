@@ -53,7 +53,7 @@ export default function Landing({ user }) {
         <div className="grid-item-small" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
           <h2 style={{ fontSize: '2.5rem' }}>Boutique service, global reach.</h2>
           <p style={{ margin: '20px 0' }}>
-            We partner with the world's most talented florists to bring artistry to your doorstep. 
+            We partner with kenya's most talented florists to bring artistry to your doorstep. 
             Every petal is handled with editorial care.
           </p>
           <Link to="/browse" className="text-uppercase" style={{ textDecoration: 'underline', color: 'var(--fora-dark)' }}>
@@ -65,7 +65,7 @@ export default function Landing({ user }) {
       {/* Footer */}
       <footer style={{ padding: '60px 5%', borderTop: '1px solid var(--fora-border)', textAlign: 'center' }}>
         <h2 className="nav-logo">flora x.</h2>
-        <p style={{ marginTop: '10px' }}>© 2026 Flora X Botanical Media. All rights reserved.</p>
+        <p style={{ marginTop: '10px' }}>© 2026 Flora X. All rights reserved.</p>
       </footer>
     </div>
   );
