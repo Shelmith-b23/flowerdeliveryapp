@@ -1,256 +1,135 @@
+// src/pages/Checkout.js
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import api from "../api/axios";
 
 export default function Checkout({ user }) {
   const navigate = useNavigate();
-
-  // Cart + delivery state
   const [cartItems, setCartItems] = useState([]);
   const [deliveryInfo, setDeliveryInfo] = useState({
     buyer_name: user?.name || "",
     buyer_phone: "",
     delivery_address: ""
   });
-
   const [loading, setLoading] = useState(false);
   const [orderCreated, setOrderCreated] = useState(null);
   const [paymentInProgress, setPaymentInProgress] = useState(false);
 
-  // Load cart + PesaPal script on mount
   useEffect(() => {
     const savedCart = JSON.parse(localStorage.getItem("cart") || "[]");
     setCartItems(savedCart);
-
-    if (!window.pesapal) {
-      const script = document.createElement("script");
-      script.src = "https://pesapal.com/api/api.js";
-      script.async = true;
-      document.body.appendChild(script);
-    }
   }, []);
 
-  // Calculate total with fallback to prevent undefined errors
-  const total = cartItems.reduce(
-    (sum, item) => sum + (Number(item.price) || 0) * (item.quantity || 1),
-    0
-  );
+  const total = cartItems.reduce((sum, item) => sum + (Number(item.price) || 0) * (item.quantity || 1), 0);
 
-  const clearCart = () => {
-    localStorage.removeItem("cart");
-    setCartItems([]);
-  };
-
-  const removeFromCart = (itemId) => {
-    const updated = cartItems.filter(i => i.id !== itemId);
-    setCartItems(updated);
-    try {
-      localStorage.setItem("cart", JSON.stringify(updated));
-    } catch (e) {
-      console.error("Failed to update local storage cart", e);
-    }
-  };
-
-  const validateForm = () => {
-    if (!deliveryInfo.buyer_name.trim()) return alert("Enter full name");
-    if (!deliveryInfo.buyer_phone.trim()) return alert("Enter phone number");
-    if (!deliveryInfo.delivery_address.trim()) return alert("Enter address");
-    return true;
-  };
-
-  /* ===============================
-      📦 CREATE ORDER
-     =============================== */
   const handleCreateOrder = async () => {
-    if (!validateForm()) return;
-
+    if (!deliveryInfo.buyer_name || !deliveryInfo.buyer_phone || !deliveryInfo.delivery_address) {
+      return alert("Please complete all delivery fields.");
+    }
     setLoading(true);
     try {
-      const items = cartItems.map(item => ({
-        flower_id: item.id,
-        quantity: item.quantity
-      }));
-
-      const res = await api.post("/orders/create", {
-        buyer_name: deliveryInfo.buyer_name.trim(),
-        buyer_phone: deliveryInfo.buyer_phone.trim(),
-        delivery_address: deliveryInfo.delivery_address.trim(),
-        items
-      });
-
-      // res.data should contain order_id and total_price
+      const items = cartItems.map(item => ({ flower_id: item.id, quantity: item.quantity }));
+      const res = await api.post("/orders/create", { ...deliveryInfo, items });
       setOrderCreated(res.data);
-      clearCart();
+      localStorage.removeItem("cart");
     } catch (err) {
-      console.error("Order creation error:", err);
-      alert(err.response?.data?.error || "Failed to create order. Check if you are logged in.");
-    } finally {
-      setLoading(false);
-    }
+      alert(err.response?.data?.error || "Order failed");
+    } finally { setLoading(false); }
   };
 
-  /* ===============================
-      💳 PESAPAL PAYMENT
-     =============================== */
-  const handleInitiatePesaPalPayment = async () => {
-    if (!orderCreated) return;
-
-    setPaymentInProgress(true);
-    try {
-      const res = await api.post("/payment/pesapal/initialize", {
-        order_id: orderCreated.order_id
-      });
-
-      if (res.data.iframe_url) {
-        window.open(
-          res.data.iframe_url,
-          "PesaPal",
-          "width=800,height=600,scrollbars=yes"
-        );
-        pollPaymentStatus(orderCreated.order_id);
-      } else {
-        alert("Failed to initialize payment");
-      }
-    } catch (err) {
-      alert("Payment initialization failed");
-    } finally {
-      setPaymentInProgress(false);
-    }
-  };
-
-  const pollPaymentStatus = async (orderId) => {
-    let attempts = 0;
-    const maxAttempts = 60;
-
-    const checkStatus = async () => {
-      try {
-        const res = await api.get(`/payment/pesapal/check-status/${orderId}`);
-        if (res.data.paid) {
-          alert("✅ Payment successful!");
-          navigate("/dashboard");
-          return;
-        }
-      } catch (_) {}
-
-      attempts++;
-      if (attempts < maxAttempts) {
-        setTimeout(checkStatus, 5000);
-      }
-    };
-
-    checkStatus();
-  };
-
-  /* ===============================
-      🛒 EMPTY CART VIEW
-     =============================== */
   if (cartItems.length === 0 && !orderCreated) {
     return (
-      <div className="checkout-container">
-        <div className="card" style={{ textAlign: "center", padding: 50 }}>
-          <h2>🛒 Your Cart is Empty</h2>
-          <button className="btn-primary" onClick={() => navigate("/browse-flowers")}>
-            Go Shopping
-          </button>
-        </div>
+      <div className="checkout-empty">
+        <h2 className="nav-logo">flora x.</h2>
+        <h1>Your bag is empty.</h1>
+        <Link to="/browse" className="btn-fora btn-outline">Return to Collection</Link>
       </div>
     );
   }
 
-  /* ===============================
-      ✅ ORDER CONFIRMATION VIEW
-     =============================== */
-  if (orderCreated) {
-    // Determine the total price from the response (handling different possible keys)
-    const confirmedTotal = Number(orderCreated.total_price || orderCreated.total || 0);
-
-    return (
-      <div className="checkout-container">
-        <div className="order-confirmation card">
-          <h2>✅ Order Created</h2>
-          <p><strong>Order ID:</strong> #{orderCreated.order_id}</p>
-          <p><strong>Total:</strong> KSh {confirmedTotal.toFixed(2)}</p>
-
-          <button
-            className="btn-primary"
-            onClick={handleInitiatePesaPalPayment}
-            disabled={paymentInProgress}
-          >
-            {paymentInProgress
-              ? "Processing..."
-              : `Pay KSh ${confirmedTotal.toFixed(2)}`}
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  /* ===============================
-      🧾 MAIN CHECKOUT FORM
-     =============================== */
   return (
-    <div className="checkout-container">
-      <div className="checkout-grid">
-        <div className="card">
-          <h2>Delivery Information</h2>
+    <div className="checkout-page">
+      <nav className="top-nav">
+        <Link to="/" className="nav-logo">flora x.</Link>
+        <span className="text-uppercase" style={{ fontSize: '0.6rem' }}>Secure Checkout</span>
+      </nav>
 
-          <input
-            type="text"
-            placeholder="Full Name"
-            value={deliveryInfo.buyer_name}
-            onChange={(e) =>
-              setDeliveryInfo({ ...deliveryInfo, buyer_name: e.target.value })
-            }
-          />
-
-          <input
-            type="tel"
-            placeholder="+254..."
-            value={deliveryInfo.buyer_phone}
-            onChange={(e) =>
-              setDeliveryInfo({ ...deliveryInfo, buyer_phone: e.target.value })
-            }
-          />
-
-          <textarea
-            placeholder="Delivery address"
-            value={deliveryInfo.delivery_address}
-            onChange={(e) =>
-              setDeliveryInfo({ ...deliveryInfo, delivery_address: e.target.value })
-            }
-          />
-
-          <button className="btn-primary" onClick={handleCreateOrder} disabled={loading}>
-            {loading ? "Creating Order..." : "Proceed to Payment"}
-          </button>
-        </div>
-
-        <div className="card">
-          <h3>Order Summary</h3>
-          {cartItems.map(item => {
-            const itemPrice = Number(item.price || 0);
-            const itemQty = Number(item.quantity || 1);
-            return (
-              <div key={item.id} className="cart-item">
-                <div className="cart-item-desc">
-                  {item.name} × {itemQty} — KSh {(itemPrice * itemQty).toFixed(2)}
-                </div>
-                <div className="cart-item-actions">
-                  <button
-                    className="btn-small btn-delete"
-                    onClick={() => removeFromCart(item.id)}
-                    aria-label={`Remove ${item.name} from cart`}
-                  >
-                    ✖ Remove
-                  </button>
-                </div>
+      <main className="checkout-container-editorial">
+        {orderCreated ? (
+          /* CONFIRMATION VIEW */
+          <div className="order-success-editorial">
+            <span className="text-uppercase" style={{ color: 'var(--fora-forest)' }}>Confirmed</span>
+            <h1>Thank you for your order.</h1>
+            <p>Order #{orderCreated.order_id} has been curated. Our florists are preparing your selection.</p>
+            <div className="confirmation-summary">
+                <h3>Total Amount: KSh {Number(orderCreated.total_price || orderCreated.total).toLocaleString()}</h3>
+                <button className="btn-fora" onClick={() => navigate('/browse')}>Complete Payment</button>
+            </div>
+          </div>
+        ) : (
+          /* MAIN CHECKOUT GRID */
+          <div className="checkout-grid-editorial">
+            {/* Left Column: Form */}
+            <section className="checkout-form-section">
+              <h2 className="editorial-title">Delivery Details</h2>
+              <div className="form-group-editorial">
+                <label>Recipient Name</label>
+                <input 
+                  type="text" 
+                  className="fora-input" 
+                  value={deliveryInfo.buyer_name}
+                  onChange={(e) => setDeliveryInfo({...deliveryInfo, buyer_name: e.target.value})}
+                />
               </div>
-            );
-          })}
-          <hr />
-          <h4>Total: KSh {total.toFixed(2)}</h4>
-        </div>
-      </div>
+              <div className="form-group-editorial">
+                <label>Contact Phone</label>
+                <input 
+                  type="tel" 
+                  className="fora-input" 
+                  placeholder="+254..."
+                  value={deliveryInfo.buyer_phone}
+                  onChange={(e) => setDeliveryInfo({...deliveryInfo, buyer_phone: e.target.value})}
+                />
+              </div>
+              <div className="form-group-editorial">
+                <label>Delivery Address</label>
+                <textarea 
+                  className="fora-input" 
+                  rows="3"
+                  value={deliveryInfo.delivery_address}
+                  onChange={(e) => setDeliveryInfo({...deliveryInfo, delivery_address: e.target.value})}
+                ></textarea>
+              </div>
+            </section>
+
+            {/* Right Column: Summary */}
+            <aside className="checkout-summary-sidebar">
+              <div className="summary-sticky">
+                <h3 className="text-uppercase">Your Selection</h3>
+                <div className="summary-items">
+                  {cartItems.map(item => (
+                    <div key={item.id} className="summary-item">
+                      <div className="item-info">
+                        <span className="item-name">{item.name}</span>
+                        <span className="item-qty">Qty: {item.quantity}</span>
+                      </div>
+                      <span className="item-price">KSh {(item.price * item.quantity).toLocaleString()}</span>
+                    </div>
+                  ))}
+                </div>
+                <div className="summary-total">
+                  <span>Grand Total</span>
+                  <span className="total-amount">KSh {total.toLocaleString()}</span>
+                </div>
+                <button className="btn-fora" style={{ width: '100%' }} onClick={handleCreateOrder} disabled={loading}>
+                  {loading ? "Processing..." : "Reserve Collection"}
+                </button>
+                <p className="secure-note">Prices include local taxes and specialized botanical handling.</p>
+              </div>
+            </aside>
+          </div>
+        )}
+      </main>
     </div>
   );
 }
