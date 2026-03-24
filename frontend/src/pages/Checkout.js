@@ -5,16 +5,6 @@ import api from "../api/axios";
 export default function Checkout({ user }) {
   const navigate = useNavigate();
 
-  /* ===============================
-     🔐 ATTACH JWT TOKEN (CRITICAL)
-     =============================== */
-  useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (token) {
-      api.setAuthToken(token);
-    }
-  }, []);
-
   // Cart + delivery state
   const [cartItems, setCartItems] = useState([]);
   const [deliveryInfo, setDeliveryInfo] = useState({
@@ -27,7 +17,7 @@ export default function Checkout({ user }) {
   const [orderCreated, setOrderCreated] = useState(null);
   const [paymentInProgress, setPaymentInProgress] = useState(false);
 
-  // Load cart + PesaPal
+  // Load cart + PesaPal script on mount
   useEffect(() => {
     const savedCart = JSON.parse(localStorage.getItem("cart") || "[]");
     setCartItems(savedCart);
@@ -40,8 +30,9 @@ export default function Checkout({ user }) {
     }
   }, []);
 
+  // Calculate total with fallback to prevent undefined errors
   const total = cartItems.reduce(
-    (sum, item) => sum + item.price * item.quantity,
+    (sum, item) => sum + (Number(item.price) || 0) * (item.quantity || 1),
     0
   );
 
@@ -55,7 +46,9 @@ export default function Checkout({ user }) {
     setCartItems(updated);
     try {
       localStorage.setItem("cart", JSON.stringify(updated));
-    } catch (e) {}
+    } catch (e) {
+      console.error("Failed to update local storage cart", e);
+    }
   };
 
   const validateForm = () => {
@@ -66,7 +59,7 @@ export default function Checkout({ user }) {
   };
 
   /* ===============================
-     📦 CREATE ORDER
+      📦 CREATE ORDER
      =============================== */
   const handleCreateOrder = async () => {
     if (!validateForm()) return;
@@ -85,18 +78,19 @@ export default function Checkout({ user }) {
         items
       });
 
+      // res.data should contain order_id and total_price
       setOrderCreated(res.data);
       clearCart();
     } catch (err) {
       console.error("Order creation error:", err);
-      alert(err.response?.data?.error || "Failed to create order");
+      alert(err.response?.data?.error || "Failed to create order. Check if you are logged in.");
     } finally {
       setLoading(false);
     }
   };
 
   /* ===============================
-     💳 PESAPAL PAYMENT
+      💳 PESAPAL PAYMENT
      =============================== */
   const handleInitiatePesaPalPayment = async () => {
     if (!orderCreated) return;
@@ -148,7 +142,7 @@ export default function Checkout({ user }) {
   };
 
   /* ===============================
-     🛒 EMPTY CART
+      🛒 EMPTY CART VIEW
      =============================== */
   if (cartItems.length === 0 && !orderCreated) {
     return (
@@ -164,15 +158,18 @@ export default function Checkout({ user }) {
   }
 
   /* ===============================
-     ✅ ORDER CONFIRMATION
+      ✅ ORDER CONFIRMATION VIEW
      =============================== */
   if (orderCreated) {
+    // Determine the total price from the response (handling different possible keys)
+    const confirmedTotal = Number(orderCreated.total_price || orderCreated.total || 0);
+
     return (
       <div className="checkout-container">
         <div className="order-confirmation card">
           <h2>✅ Order Created</h2>
           <p><strong>Order ID:</strong> #{orderCreated.order_id}</p>
-          <p><strong>Total:</strong> KSh {orderCreated.total_price.toFixed(2)}</p>
+          <p><strong>Total:</strong> KSh {confirmedTotal.toFixed(2)}</p>
 
           <button
             className="btn-primary"
@@ -181,7 +178,7 @@ export default function Checkout({ user }) {
           >
             {paymentInProgress
               ? "Processing..."
-              : `Pay KSh ${orderCreated.total_price.toFixed(2)}`}
+              : `Pay KSh ${confirmedTotal.toFixed(2)}`}
           </button>
         </div>
       </div>
@@ -189,7 +186,7 @@ export default function Checkout({ user }) {
   }
 
   /* ===============================
-     🧾 CHECKOUT FORM
+      🧾 MAIN CHECKOUT FORM
      =============================== */
   return (
     <div className="checkout-container">
@@ -230,22 +227,27 @@ export default function Checkout({ user }) {
 
         <div className="card">
           <h3>Order Summary</h3>
-          {cartItems.map(item => (
-            <div key={item.id} className="cart-item">
-              <div className="cart-item-desc">
-                {item.name} × {item.quantity} — KSh {(item.price * item.quantity).toFixed(2)}
+          {cartItems.map(item => {
+            const itemPrice = Number(item.price || 0);
+            const itemQty = Number(item.quantity || 1);
+            return (
+              <div key={item.id} className="cart-item">
+                <div className="cart-item-desc">
+                  {item.name} × {itemQty} — KSh {(itemPrice * itemQty).toFixed(2)}
+                </div>
+                <div className="cart-item-actions">
+                  <button
+                    className="btn-small btn-delete"
+                    onClick={() => removeFromCart(item.id)}
+                    aria-label={`Remove ${item.name} from cart`}
+                  >
+                    ✖ Remove
+                  </button>
+                </div>
               </div>
-              <div className="cart-item-actions">
-                <button
-                  className="btn-small btn-delete"
-                  onClick={() => removeFromCart(item.id)}
-                  aria-label={`Remove ${item.name} from cart`}
-                >
-                  ✖ Remove
-                </button>
-              </div>
-            </div>
-          ))}
+            );
+          })}
+          <hr />
           <h4>Total: KSh {total.toFixed(2)}</h4>
         </div>
       </div>
