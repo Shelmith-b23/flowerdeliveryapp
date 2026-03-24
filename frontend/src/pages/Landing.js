@@ -40,7 +40,7 @@ export default function Landing({ user }) {
         <div className="grid-item-large">
           <div className="flower-card">
             <div className="img-container">
-              <img src="https://images.unsplash.com/photo-1526047932273-341f2a7631f9?auto=format&fit=crop&q=80&w=1200" alt="Luxe Bouquet" />
+              <img src="https://tse1.mm.bing.net/th/id/OIP.wezPWM0gMFPwo5LjNodYjwHaGp?pid=Api&h=220&P=0" alt="Luxe Bouquet" />
             </div>
             <div style={{ padding: '24px' }}>
               <span className="text-uppercase">The Signature Collection</span>
