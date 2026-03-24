@@ -33,8 +33,7 @@ export default function FloristDashboard({ user }) {
   const fetchOrders = async () => {
     setLoading(true);
     try {
-      // Updated URL: Added "/api" prefix to match backend route (/api/orders/florist)
-      const res = await api.get("api/orders/florist");
+      const res = await api.get("/orders/florist");
       setOrders(res.data);
     } catch (err) {
       console.error("Failed to fetch orders:", err);
@@ -45,8 +44,7 @@ export default function FloristDashboard({ user }) {
 
   const handleAddFlower = async () => {
     try {
-      // Updated URL: Added "/api" prefix to match backend route (/api/flowers)
-      await api.post("api/flowers", {
+      await api.post("/flowers", {
         ...flower,
         florist_id: user.id
       });
@@ -66,8 +64,7 @@ export default function FloristDashboard({ user }) {
 
   const handleUpdateOrderStatus = async (orderId, newStatus) => {
     try {
-      // Updated URL: Added "/api" prefix to match backend route (/api/orders/{orderId}/status)
-      await api.put(`api/orders/${orderId}/status`, { status: newStatus });
+      await api.put(`/orders/${orderId}/status`, { status: newStatus });
       alert("Order status updated");
       fetchOrders();
       setSelectedOrder(null);
