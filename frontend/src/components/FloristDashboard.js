@@ -1,32 +1,16 @@
 // src/pages/FloristDashboard.js
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import api from "../api/axios";
 
 export default function FloristDashboard({ user }) {
   const navigate = useNavigate();
-
-  const [flower, setFlower] = useState({
-    name: "",
-    price: "",
-    image_url: "",
-    description: ""
-  });
-
   const [orders, setOrders] = useState([]);
-  const [selectedOrder, setSelectedOrder] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  // Set auth token on mount
   useEffect(() => {
     const token = localStorage.getItem("token");
-    if (token) {
-      api.setAuthToken(token);
-    }
-  }, []);
-
-  // Fetch orders when component mounts
-  useEffect(() => {
+    if (token) api.setAuthToken(token);
     fetchOrders();
   }, []);
 
@@ -34,214 +18,124 @@ export default function FloristDashboard({ user }) {
     setLoading(true);
     try {
       const res = await api.get("/orders/florist");
-      setOrders(res.data);
+      setOrders(Array.isArray(res.data) ? res.data : []);
     } catch (err) {
-      console.error("Failed to fetch orders:", err);
+      console.error("Sync Error:", err);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleAddFlower = async () => {
-    try {
-      await api.post("/flowers", {
-        ...flower,
-        florist_id: user.id
-      });
-      alert("Flower added successfully");
-
-      // Clear form after submit
-      setFlower({
-        name: "",
-        price: "",
-        image_url: "",
-        description: ""
-      });
-    } catch (err) {
-      alert("Failed to add flower");
-    }
-  };
-
-  const handleUpdateOrderStatus = async (orderId, newStatus) => {
+  const handleUpdateStatus = async (orderId, newStatus) => {
     try {
       await api.put(`/orders/${orderId}/status`, { status: newStatus });
-      alert("Order status updated");
       fetchOrders();
-      setSelectedOrder(null);
     } catch (err) {
-      alert("Failed to update order status");
+      alert("Status update failed.");
     }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    navigate("/login");
-  };
+  // --- ANALYTICS LOGIC (No Libraries Needed) ---
+  const totalRevenue = orders.reduce((acc, curr) => acc + Number(curr.total_price || 0), 0);
+  const pendingOrders = orders.filter(o => o.status === 'pending').length;
+  
+  // Get top 3 flowers by counting occurrences in orders
+  const flowerCounts = {};
+  orders.forEach(order => {
+    order.items?.forEach(item => {
+      flowerCounts[item.flower_name] = (flowerCounts[item.flower_name] || 0) + item.quantity;
+    });
+  });
+  const topStems = Object.entries(flowerCounts)
+    .sort(([, a], [, b]) => b - a)
+    .slice(0, 3);
+
+  const formatKSh = (val) => Number(val || 0).toLocaleString('en-KE', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  });
 
   return (
-    <div className="fd-container">
-      <div className="fd-header">
-        <div>
-          <h1>Florist</h1>
-          <p className="sub">{user.shop_name || user.name}</p>
+    <div className="bd-container-seamless">
+      <header className="bd-header-refined">
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div>
+            <span className="text-uppercase" style={{ fontSize: '10px' }}>Studio Management</span>
+            <h1>{user.shop_name || "Botanical Studio"}</h1>
+          </div>
+          <div style={{ display: 'flex', gap: '15px' }}>
+            <Link to="/florist/manage-flowers" className="btn-fora btn-outline">Inventory</Link>
+            <button className="logout-btn-minimal" onClick={() => { localStorage.clear(); navigate("/login"); }}>Sign Out</button>
+          </div>
         </div>
-        <div className="fd-header-actions">
-          <button className="fd-nav-btn" onClick={() => navigate("/florist/manage-flowers")}>
-            🌸 Manage Flowers
-          </button>
-          <button className="fd-logout" onClick={handleLogout}>
-            Logout
-          </button>
+      </header>
+
+      {/* LIGHTWEIGHT ANALYTICS GRID */}
+      <section className="simple-stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px', marginTop: '40px' }}>
+        
+        {/* Revenue Box */}
+        <div style={{ padding: '30px', border: '1px solid #1A1A1A', background: '#1A1A1A', color: '#FFF' }}>
+          <span className="text-uppercase" style={{ fontSize: '9px', opacity: 0.8 }}>Total Revenue</span>
+          <h2 style={{ fontSize: '2rem', margin: '10px 0' }}>KSh {formatKSh(totalRevenue)}</h2>
+          <div style={{ height: '4px', width: '100%', background: '#333', marginTop: '15px' }}>
+            <div style={{ height: '100%', width: '70%', background: '#FFF' }}></div> {/* Visual progress bar */}
+          </div>
         </div>
-      </div>
 
-      <div className="fd-section">
-        <h2>📦 Incoming Orders</h2>
-        {loading ? (
-          <p>Loading orders...</p>
-        ) : orders.length === 0 ? (
-          <p style={{ color: "var(--muted-gray)" }}>No orders yet</p>
-        ) : (
-          <div className="fd-orders">
-            {orders.map(order => (
-              <div key={order.id} className="fd-order">
-                <div className="fd-order-header">
-                  <div>
-                    <h4>Order #{order.id}</h4>
-                    <p style={{ fontSize: "0.9em", color: "var(--muted-gray)" }}>
-                      {new Date(order.created_at).toLocaleDateString()}
-                    </p>
-                  </div>
-                  <div className="fd-order-meta">
-                    <span className={`status ${order.paid ? "paid" : "pending"}`}>
-                      {order.paid ? "✅ Paid" : "⏳ Pending Payment"}
-                    </span>
-                    <span className={`status-${order.status}`}>
-                      {order.status.toUpperCase()}
-                    </span>
-                  </div>
+        {/* Top Stems Box (CSS-based Bar Chart) */}
+        <div style={{ padding: '30px', border: '1px solid #EEE' }}>
+          <span className="text-uppercase" style={{ fontSize: '9px', color: '#717171' }}>Bestselling Stems</span>
+          <div style={{ marginTop: '15px' }}>
+            {topStems.length > 0 ? topStems.map(([name, qty]) => (
+              <div key={name} style={{ marginBottom: '12px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', marginBottom: '4px' }}>
+                  <span>{name}</span>
+                  <span>{qty} Sold</span>
                 </div>
-
-                <div className="fd-buyer-info">
-                  <h5>👤 Buyer Information</h5>
-                  <div className="info-grid">
-                    <div>
-                      <label>Full Name:</label>
-                      <p>{order.buyer_name}</p>
-                    </div>
-                    <div>
-                      <label>Email:</label>
-                      <p>{order.buyer_email}</p>
-                    </div>
-                    <div>
-                      <label>Phone:</label>
-                      <p>{order.buyer_phone}</p>
-                    </div>
-                    <div>
-                      <label>Delivery Address:</label>
-                      <p>{order.delivery_address}</p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="fd-items-list">
-                  <h5>🌸 Items</h5>
-                  {order.items.map(item => (
-                    <div key={item.id} className="item-row">
-                      <span>{item.flower_name} × {item.quantity}</span>
-                      <span className="price">KSh {(item.unit_price * item.quantity).toFixed(2)}</span>
-                    </div>
-                  ))}
-                  <hr style={{ margin: "10px 0" }} />
-                  <div className="total-row">
-                    <strong>Total:</strong>
-                    <strong>KSh {order.total_price.toFixed(2)}</strong>
-                  </div>
-                </div>
-
-                <div className="fd-actions">
-                  <button
-                    className="fd-btn"
-                    onClick={() => setSelectedOrder(order)}
-                  >
-                    View Details
-                  </button>
-                  {order.status !== "delivered" && (
-                    <button
-                      className="fd-btn primary"
-                      onClick={() => {
-                        const nextStatus = 
-                          order.status === "pending" ? "processing" :
-                          order.status === "processing" ? "delivered" : "pending";
-                        handleUpdateOrderStatus(order.id, nextStatus);
-                      }}
-                    >
-                      Mark as {
-                        order.status === "pending" ? "Processing" :
-                        order.status === "processing" ? "Delivered" : "Pending"
-                      }
-                    </button>
-                  )}
+                <div style={{ height: '2px', width: '100%', background: '#EEE' }}>
+                  <div style={{ height: '100%', width: `${Math.min(qty * 10, 100)}%`, background: '#1A1A1A' }}></div>
                 </div>
               </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Order Detail Modal */}
-      {selectedOrder && (
-        <div className="fd-modal-overlay" onClick={() => setSelectedOrder(null)}>
-          <div className="fd-modal" onClick={(e) => e.stopPropagation()}>
-            <h3>Order #{selectedOrder.id} Details</h3>
-            
-            <div className="fd-form-desc">
-              <h5>📋 Buyer Information</h5>
-              <p><strong>Name:</strong> {selectedOrder.buyer_name}</p>
-              <p><strong>Email:</strong> {selectedOrder.buyer_email}</p>
-              <p><strong>Phone:</strong> {selectedOrder.buyer_phone}</p>
-              <p><strong>Address:</strong> {selectedOrder.delivery_address}</p>
-              <p><strong>Payment Status:</strong> {selectedOrder.paid ? "✅ Paid" : "⏳ Pending"}</p>
-              <p><strong>Order Status:</strong> {selectedOrder.status.toUpperCase()}</p>
-            </div>
-
-            <div className="fd-form-desc">
-              <h5>🌸 Items</h5>
-              {selectedOrder.items.map(item => (
-                <div key={item.id} style={{ marginBottom: "10px" }}>
-                  <p>{item.flower_name}</p>
-                  <p style={{ fontSize: "0.9em", color: "var(--muted-gray)" }}>
-                    Quantity: {item.quantity} × KSh {item.unit_price} = KSh {(item.quantity * item.unit_price).toFixed(2)}
-                  </p>
-                </div>
-              ))}
-              <hr />
-              <p><strong>Total: KSh {selectedOrder.total_price.toFixed(2)}</strong></p>
-            </div>
-
-            <div className="fd-form-actions">
-              <button className="btn cancel" onClick={() => setSelectedOrder(null)}>
-                Close
-              </button>
-              {selectedOrder.status !== "delivered" && (
-                <button 
-                  className="btn save"
-                  onClick={() => {
-                    const nextStatus = 
-                      selectedOrder.status === "pending" ? "processing" :
-                      selectedOrder.status === "processing" ? "delivered" : "pending";
-                    handleUpdateOrderStatus(selectedOrder.id, nextStatus);
-                  }}
-                >
-                  Mark as Delivered
-                </button>
-              )}
-            </div>
+            )) : <p className="bd-email-small">No sales data yet.</p>}
           </div>
         </div>
-      )}
 
-      </div>
+        {/* Status Box */}
+        <div style={{ padding: '30px', border: '1px solid #EEE' }}>
+          <span className="text-uppercase" style={{ fontSize: '9px', color: '#717171' }}>Order Pulse</span>
+          <h2 style={{ fontSize: '2rem', margin: '10px 0' }}>{pendingOrders} <span style={{ fontSize: '14px', fontWeight: '400' }}>New</span></h2>
+          <p className="bd-email-small">{orders.length} total curated orders.</p>
+        </div>
+
+      </section>
+
+      {/* ORDER LIST */}
+      <section style={{ marginTop: '60px' }}>
+        <h2 className="text-uppercase" style={{ fontSize: '11px', letterSpacing: '0.2em', marginBottom: '30px' }}>Live Manifests</h2>
+        <div className="order-list-seamless">
+          {orders.map(order => (
+            <div key={order.id} className="order-row-hairline" style={{ display: 'flex', justifyContent: 'space-between', padding: '20px 0', borderBottom: '1px solid #F5F5F5' }}>
+              <div>
+                <span className="text-uppercase" style={{ fontSize: '9px', color: '#717171' }}>#{order.id}</span>
+                <p style={{ margin: '5px 0', fontWeight: '600' }}>{order.buyer_name}</p>
+                <span className={`status-tag ${order.status}`}>{order.status}</span>
+              </div>
+              <div style={{ textAlign: 'right' }}>
+                <p style={{ fontWeight: '600', marginBottom: '10px' }}>KSh {formatKSh(order.total_price)}</p>
+                {order.status !== 'delivered' && (
+                  <button 
+                    className="btn-fora btn-outline" 
+                    style={{ fontSize: '10px', padding: '5px 10px' }}
+                    onClick={() => handleUpdateStatus(order.id, order.status === 'pending' ? 'processing' : 'delivered')}
+                  >
+                    Mark {order.status === 'pending' ? 'Processing' : 'Delivered'}
+                  </button>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+    </div>
   );
 }

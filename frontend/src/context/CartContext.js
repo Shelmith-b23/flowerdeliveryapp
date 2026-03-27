@@ -1,18 +1,25 @@
-import { createContext, useContext, useState } from "react";
+import { createContext, useContext, useState, useEffect } from "react";
 
 const CartContext = createContext(null);
 
 export function CartProvider({ children }) {
-  const [cartItems, setCartItems] = useState([]);
+  // Initialize from localStorage so the bag doesn't empty on refresh
+  const [cartItems, setCartItems] = useState(() => {
+    const saved = localStorage.getItem("flora_cart");
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  // Sync to localStorage whenever cart changes
+  useEffect(() => {
+    localStorage.setItem("flora_cart", JSON.stringify(cartItems));
+  }, [cartItems]);
 
   const addToCart = (flower) => {
     setCartItems((prev) => {
       const existing = prev.find((item) => item.id === flower.id);
       if (existing) {
         return prev.map((item) =>
-          item.id === flower.id
-            ? { ...item, quantity: item.quantity + 1 }
-            : item
+          item.id === flower.id ? { ...item, quantity: item.quantity + 1 } : item
         );
       }
       return [...prev, { ...flower, quantity: 1 }];
@@ -23,16 +30,10 @@ export function CartProvider({ children }) {
     setCartItems((prev) => prev.filter((item) => item.id !== id));
   };
 
-  const removeItem = (id) => {
-    removeFromCart(id);
-  };
-
   const increaseQty = (id) => {
     setCartItems((prev) =>
       prev.map((item) =>
-        item.id === id
-          ? { ...item, quantity: item.quantity + 1 }
-          : item
+        item.id === id ? { ...item, quantity: item.quantity + 1 } : item
       )
     );
   };
@@ -41,9 +42,7 @@ export function CartProvider({ children }) {
     setCartItems((prev) =>
       prev
         .map((item) =>
-          item.id === id
-            ? { ...item, quantity: Math.max(0, item.quantity - 1) }
-            : item
+          item.id === id ? { ...item, quantity: item.quantity - 1 } : item
         )
         .filter((item) => item.quantity > 0)
     );
@@ -51,15 +50,17 @@ export function CartProvider({ children }) {
 
   const clearCart = () => setCartItems([]);
 
+  // Computed Values for the UI
   const subtotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  const cartCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
 
   return (
     <CartContext.Provider
       value={{
         cartItems,
+        cartCount, // Now available for TopNav
         addToCart,
         removeFromCart,
-        removeItem,
         increaseQty,
         decreaseQty,
         clearCart,
@@ -72,5 +73,7 @@ export function CartProvider({ children }) {
 }
 
 export function useCart() {
-  return useContext(CartContext);
+  const context = useContext(CartContext);
+  if (!context) throw new Error("useCart must be used within a CartProvider");
+  return context;
 }

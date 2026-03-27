@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import api from "../api/axios";
-import { useCart } from "../context/CartContext"; // Using context for a seamless sync
+import { useCart } from "../context/CartContext";
 
 export default function BuyerDashboard({ user }) {
   const [orders, setOrders] = useState([]);
@@ -10,6 +10,7 @@ export default function BuyerDashboard({ user }) {
   const [loading, setLoading] = useState(true);
   const [flowersLoading, setFlowersLoading] = useState(true);
   
+  // Connect to your new CartContext
   const { cartCount, addToCart } = useCart(); 
   const navigate = useNavigate();
 
@@ -32,7 +33,7 @@ export default function BuyerDashboard({ user }) {
   const fetchFeaturedFlowers = async () => {
     try {
       const res = await api.get("flowers");
-      // Showing a curated selection of 4 for a cleaner grid
+      // Curating the top 4 for a clean, editorial grid
       setFlowers(Array.isArray(res.data) ? res.data.slice(0, 4) : []);
     } catch (err) {
       console.error("Failed to fetch flowers:", err);
@@ -47,7 +48,7 @@ export default function BuyerDashboard({ user }) {
     navigate("/login");
   };
 
-  // Safe Currency Formatter
+  // Safe Currency Formatter (Prevents .toFixed errors)
   const formatKSh = (val) => Number(val || 0).toLocaleString('en-KE', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2
@@ -55,17 +56,17 @@ export default function BuyerDashboard({ user }) {
 
   return (
     <div className="bd-container-seamless">
-      {/* HEADER: Minimalist & Clean */}
+      {/* HEADER: Minimalist Editorial Style */}
       <header className="bd-header-refined">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
           <div>
-            <span className="text-uppercase">Member Gallery</span>
-            <h1>Welcome, {user?.name?.split(' ')[0] || "Collector"}</h1>
-            <p className="bd-email-small">{user?.email}</p>
+            <span className="text-uppercase" style={{ fontSize: '10px', letterSpacing: '2px' }}>Member Gallery</span>
+            <h1 style={{ margin: '10px 0' }}>Welcome, {user?.name?.split(' ')[0] || "Collector"}</h1>
+            <p className="bd-email-small" style={{ color: '#717171' }}>{user?.email}</p>
           </div>
           
-          <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
-            <Link to="/cart" className="nav-cart-link">
+          <div style={{ display: 'flex', gap: '25px', alignItems: 'center' }}>
+            <Link to="/cart" className="nav-cart-link" style={{ fontWeight: '600', textDecoration: 'none', color: '#1A1A1A' }}>
               BAG ({cartCount})
             </Link>
             <button className="logout-btn-minimal" onClick={handleLogout}>Sign Out</button>
@@ -73,34 +74,39 @@ export default function BuyerDashboard({ user }) {
         </div>
       </header>
 
-      {/* FEATURED SECTION: Portrait Cards */}
-      <section className="bd-main-content" style={{ marginTop: '60px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '30px' }}>
+      {/* FEATURED SECTION: Portrait cards for high-end feel */}
+      <section className="bd-main-content" style={{ marginTop: '80px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '40px' }}>
           <h2 className="section-title-small text-uppercase">New Accessions</h2>
-          <Link to="/categories" className="action-link">View All</Link>
+          <Link to="/categories" className="action-link" style={{ fontSize: '12px' }}>View All Collections</Link>
         </div>
 
         {flowersLoading ? (
-          <p className="text-uppercase">Opening the vault...</p>
+          <p className="text-uppercase" style={{ textAlign: 'center', padding: '50px' }}>Syncing with the Garden...</p>
         ) : (
-          <div className="inventory-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '40px' }}>
+          <div className="inventory-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '40px' }}>
             {flowers.map(flower => (
               <div key={flower.id} className="flower-card-hairline">
-                <div className="flower-img-wrapper" style={{ height: '380px', background: '#F9F9F9' }}>
+                <div className="flower-img-wrapper" style={{ height: '420px', background: '#F9F9F9', overflow: 'hidden' }}>
                   <img 
                     src={flower.image_url || "https://placehold.co/400x600"} 
                     alt={flower.name} 
-                    style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                    style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.5s ease' }} 
                   />
                 </div>
-                <div className="flower-details" style={{ marginTop: '15px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <h3 className="empty-title-serif" style={{ fontSize: '1.2rem' }}>{flower.name}</h3>
-                    <span className="order-total">KSh {formatKSh(flower.price)}</span>
+                <div className="flower-details" style={{ marginTop: '20px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <div>
+                      <h3 className="empty-title-serif" style={{ fontSize: '1.4rem', marginBottom: '5px' }}>{flower.name}</h3>
+                      <span className="text-uppercase" style={{ fontSize: '9px', color: '#717171' }}>{flower.category || 'Seasonal'}</span>
+                    </div>
+                    <span className="order-total" style={{ fontWeight: '600' }}>KSh {formatKSh(flower.price)}</span>
                   </div>
+                  
+                  {/* THE BUTTON: Now connected to useCart() */}
                   <button 
                     className="btn-fora btn-outline" 
-                    style={{ width: '100%', marginTop: '15px', fontSize: '10px' }}
+                    style={{ width: '100%', marginTop: '20px', fontSize: '10px', padding: '12px' }}
                     onClick={() => addToCart(flower)}
                   >
                     Add to Selection
@@ -112,27 +118,27 @@ export default function BuyerDashboard({ user }) {
         )}
       </section>
 
-      {/* ORDERS SECTION: Hairline List */}
-      <section className="bd-orders-section" style={{ marginTop: '80px', borderTop: '1px solid #EEE', paddingTop: '40px' }}>
-        <h2 className="text-uppercase" style={{ fontSize: '11px', letterSpacing: '0.1em', marginBottom: '30px' }}>Order History</h2>
+      {/* ORDERS SECTION: Minimalist List */}
+      <section className="bd-orders-section" style={{ marginTop: '100px', borderTop: '1px solid #EEE', paddingTop: '60px' }}>
+        <h2 className="text-uppercase" style={{ fontSize: '11px', letterSpacing: '0.2em', marginBottom: '40px', color: '#1A1A1A' }}>Past Acquisitions</h2>
         
         {loading ? (
-          <p className="text-uppercase">Retrieving History...</p>
+          <p className="text-uppercase">Retrieving Archives...</p>
         ) : orders.length === 0 ? (
-          <p className="bd-email-small">Your history is currently a blank canvas.</p>
+          <p className="bd-email-small">Your curation history is currently empty.</p>
         ) : (
           <div className="order-list-seamless">
             {orders.map(order => (
-              <div key={order.id} className="order-row-hairline">
+              <div key={order.id} className="order-row-hairline" style={{ display: 'flex', justifyContent: 'space-between', padding: '25px 0', borderBottom: '1px solid #F0F0F0' }}>
                 <div className="order-info">
-                  <span className="text-uppercase" style={{ fontSize: '10px', color: '#717171' }}>Order #{order.id}</span>
-                  <span className="order-date" style={{ display: 'block' }}>
+                  <span className="text-uppercase" style={{ fontSize: '9px', color: '#717171', display: 'block', marginBottom: '5px' }}>Order Ref: #{order.id}</span>
+                  <span className="order-date" style={{ fontSize: '14px' }}>
                     {new Date(order.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
                   </span>
                 </div>
                 <div style={{ textAlign: 'right' }}>
-                  <span className={`status-tag ${order.status}`}>{order.status}</span>
-                  <span className="order-total" style={{ display: 'block', marginTop: '5px', fontWeight: '600' }}>
+                  <span className={`status-tag ${order.status}`} style={{ fontSize: '10px' }}>{order.status.toUpperCase()}</span>
+                  <span className="order-total" style={{ display: 'block', marginTop: '8px', fontWeight: '600' }}>
                     KSh {formatKSh(order.total_price)}
                   </span>
                 </div>
