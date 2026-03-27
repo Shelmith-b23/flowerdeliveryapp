@@ -1,23 +1,24 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import api from "../api/axios";
 
 export default function PaymentCallback() {
   const navigate = useNavigate();
+  const location = useLocation(); // To grab URL params
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState("processing");
 
-  useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (token) {
-      api.setAuthToken(token);
-    }
-  }, []);
+  // Helper to get params from the URL
+  const queryParams = new URLSearchParams(location.search);
+  const trackingId = queryParams.get("OrderTrackingId");
+  const merchantRef = queryParams.get("OrderMerchantReference");
 
   const verifyPayment = useCallback(async () => {
     try {
-      const reference = localStorage.getItem("pesapal_reference");
-      const orderId = localStorage.getItem("order_id");
+      // Priority 1: URL Params (Most reliable) 
+      // Priority 2: localStorage (Fallback)
+      const reference = trackingId || localStorage.getItem("pesapal_reference");
+      const orderId = merchantRef || localStorage.getItem("order_id");
 
       if (!reference || !orderId) {
         setStatus("error");
@@ -26,74 +27,72 @@ export default function PaymentCallback() {
       }
 
       const res = await api.post("/payment/pesapal/verify", {
-        order_id: parseInt(orderId),
+        order_id: orderId, // Use the ID from PesaPal
         reference_id: reference,
       });
 
-      if (res.data.success && res.data.status === "completed") {
+      if (res.data.success && (res.data.status === "completed" || res.data.status === "Success")) {
         setStatus("success");
-        setTimeout(() => navigate("/orders"), 3000);
+        // Redirect to the new "Buyer Dashboard" we built earlier
+        setTimeout(() => navigate("/buyer-dashboard"), 3000);
       } else if (res.data.status === "pending") {
         setStatus("pending");
-        setTimeout(() => navigate("/orders"), 3000);
+        setTimeout(() => navigate("/buyer-dashboard"), 3000);
       } else {
         setStatus("error");
       }
     } catch (err) {
-      console.error("Payment verification error:", err);
+      console.error("Verification error:", err);
       setStatus("error");
     } finally {
       setLoading(false);
     }
-  }, [navigate]);
+  }, [navigate, trackingId, merchantRef]);
 
   useEffect(() => {
     verifyPayment();
   }, [verifyPayment]);
 
+  // Clean, Editorial UI matching your Dashboard
   return (
     <div style={{
       minHeight: "100vh",
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
-      backgroundColor: "#f9f7f4",
-      padding: "20px"
+      backgroundColor: "#FFF", // Pure white for that gallery feel
+      padding: "20px",
+      fontFamily: "inherit"
     }}>
       <div style={{
-        backgroundColor: "white",
-        padding: "40px",
-        borderRadius: "12px",
         textAlign: "center",
-        boxShadow: "0 4px 15px rgba(0,0,0,0.1)",
-        maxWidth: "400px"
+        maxWidth: "450px",
+        width: "100%"
       }}>
         {loading ? (
-          <>
-            <div style={{ fontSize: "3em", marginBottom: "20px" }}>⏳</div>
-            <h2>Processing Payment</h2>
-            <p>Please wait while we verify your payment...</p>
-          </>
+          <div className="fade-in">
+             <span className="text-uppercase" style={{ fontSize: '10px', letterSpacing: '3px', color: '#BBB' }}>Authenticating</span>
+             <h2 className="empty-title-serif" style={{ fontSize: '2.5rem', margin: '20px 0' }}>Verifying Selection</h2>
+             <div className="loading-bar-container" style={{ width: '60px', height: '1px', background: '#EEE', margin: '0 auto' }}>
+                <div className="loading-bar-active" style={{ width: '50%', height: '100%', background: '#1A1A1A' }}></div>
+             </div>
+          </div>
         ) : status === "success" ? (
-          <>
-            <div style={{ fontSize: "3em" }}>✅</div>
-            <h2 style={{ color: "#4CAF50" }}>Payment Successful!</h2>
-            <p>Redirecting to your orders...</p>
-          </>
-        ) : status === "pending" ? (
-          <>
-            <div style={{ fontSize: "3em" }}>⏳</div>
-            <h2 style={{ color: "#FFC107" }}>Payment Pending</h2>
-            <p>Redirecting to your orders...</p>
-          </>
+          <div className="fade-in">
+            <span className="text-uppercase" style={{ color: '#4A5D4E', fontSize: '10px', fontWeight: '700', letterSpacing: '2px' }}>Confirmed</span>
+            <h2 className="empty-title-serif" style={{ fontSize: '3rem', margin: '15px 0' }}>Payment Received.</h2>
+            <p style={{ color: '#717171', marginBottom: '30px' }}>Your botanical collection is now being prepared for transit.</p>
+            <button className="btn-fora" onClick={() => navigate("/buyer-dashboard")}>View Dashboard</button>
+          </div>
         ) : (
-          <>
-            <div style={{ fontSize: "3em" }}>❌</div>
-            <h2 style={{ color: "#d32f2f" }}>Payment Failed</h2>
-            <button onClick={() => navigate("/checkout")}>
-              ← Back to Checkout
+          <div className="fade-in">
+            <span className="text-uppercase" style={{ color: '#d32f2f', fontSize: '10px', fontWeight: '700', letterSpacing: '2px' }}>Incomplete</span>
+            <h2 className="empty-title-serif" style={{ fontSize: '2.5rem', margin: '15px 0' }}>Transaction Unresolved</h2>
+            <p style={{ color: '#717171', marginBottom: '30px' }}>We couldn't verify this payment. Please contact support if funds were deducted.</p>
+            <button className="btn-fora btn-outline" style={{ width: '100%' }} onClick={() => navigate("/checkout")}>
+              Return to Checkout
             </button>
-          </>
+          </div>
         )}
       </div>
     </div>

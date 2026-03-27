@@ -1,7 +1,8 @@
+// src/components/TopNav.js
 import React from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useCart } from "../context/CartContext";
-import logo from "../assets/flora-x.jpg"; // Ensure path is correct
+import logo from "../assets/flora-x.jpg";
 
 export default function TopNav({ user, logout }) {
   const navigate = useNavigate();
@@ -20,16 +21,15 @@ export default function TopNav({ user, logout }) {
       <div className="nav-center">
         {user?.role === "buyer" && (
           <>
-            <Link to="/categories" className="nav-link-item">Flowers</Link>
-            <Link to="/orders" className="nav-link-item">Orders</Link>
+            <Link to="/categories" className="nav-link-item">Collections</Link>
+            <Link to="/buyer-dashboard" className="nav-link-item">My Gallery</Link>
           </>
         )}
 
         {user?.role === "florist" && (
           <>
-            <Link to="/florist-dashboard" className="nav-link-item">Dashboard</Link>
+            <Link to="/florist-dashboard" className="nav-link-item">Studio</Link>
             <Link to="/florist/manage-flowers" className="nav-link-item">Inventory</Link>
-            <Link to="/orders" className="nav-link-item">Shop Orders</Link>
           </>
         )}
         
@@ -39,13 +39,16 @@ export default function TopNav({ user, logout }) {
       {/* RIGHT: Actions & User */}
       <div className="nav-right">
         {user?.role === "buyer" && (
-          <Link to="/cart" className="nav-cart-link">
-            BAG {cartCount > 0 && <span className="cart-badge">{cartCount}</span>}
+          /* UPDATED: Link now goes directly to /checkout */
+          <Link to="/checkout" className="nav-cart-link">
+            <span className="text-uppercase" style={{ fontSize: '11px', letterSpacing: '1px' }}>
+              Bag {cartCount > 0 && <span className="cart-badge-editorial">{cartCount}</span>}
+            </span>
           </Link>
         )}
 
         {user ? (
-          <div className="user-profile-nav">
+          <div className="user-profile-nav" style={{ marginLeft: '20px' }}>
             <span className="user-name-label">{user.name?.split(' ')[0]}</span>
             <button className="logout-btn-minimal" onClick={logout}>Sign Out</button>
           </div>
