@@ -1,3 +1,4 @@
+// src/App.js
 import React, { useState, useEffect } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import api from "./api/axios";
@@ -18,9 +19,9 @@ import FloristFlowerManagement from "./pages/FloristFlowerManagement";
 // ✅ Combined Auth Flow (Named Imports)
 import { ForgotPassword, ResetPassword } from "./pages/AuthFlow";
 
-// ✅ Dashboards
-import BuyerDashboard from "./components/BuyerDashboard";
-import FloristDashboard from "./components/FloristDashboard";
+// ✅ Dashboards (Ensuring these are the Upgraded Versions)
+import BuyerDashboard from "./pages/BuyerDashboard"; 
+import FloristDashboard from "./pages/FloristDashboard";
 
 function App() {
   const [user, setUser] = useState(null);
@@ -37,7 +38,7 @@ function App() {
       try {
         const parsedUser = JSON.parse(storedUser);
         setUser(parsedUser);
-        // Note: axios.js automatically pulls the token from localStorage for every request
+        api.setAuthToken(token); // Ensure axios header is set on refresh
       } catch (e) {
         console.error("Session corrupted. Clearing storage...");
         localStorage.clear();
@@ -48,8 +49,8 @@ function App() {
 
   if (loadingUser) {
     return (
-      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh" }}>
-        <h3>🌸 Loading Flower App...</h3>
+      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh", fontFamily: 'serif' }}>
+        <h3 className="animate-pulse">🌸 Preparing your Flora X experience...</h3>
       </div>
     );
   }
@@ -65,7 +66,7 @@ function App() {
           <Route path="/register" element={<Register setUser={setUser} />} />
           <Route path="/flower-details/:flowerId" element={<FlowerDetails />} />
           
-          {/* New Auth Flow Routes */}
+          {/* Auth Flow */}
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
 
@@ -79,6 +80,7 @@ function App() {
             }
           />
 
+          {/* CHECKOUT: Explicitly ensuring this is accessible to Buyers */}
           <Route
             path="/checkout"
             element={
@@ -88,6 +90,7 @@ function App() {
             }
           />
 
+          {/* PesaPal Callback (Should be public so PesaPal can redirect back) */}
           <Route path="/payment-callback" element={<PaymentCallback />} />
 
           {/* ================= FLORIST ROUTES ================= */}
@@ -104,7 +107,6 @@ function App() {
             path="/florist/manage-flowers"
             element={
               <ProtectedRoute user={user} role="florist">
-                {/* User prop passed here to handle shop details and ownership */}
                 <FloristFlowerManagement user={user} />
               </ProtectedRoute>
             }
@@ -119,16 +121,20 @@ function App() {
 }
 
 /**
- * 🛡️ Protected Route Component
- * Validates existence of user and matches required role to prevent 403/401 errors.
+ * 🛡️ Robust Protected Route Component
  */
 function ProtectedRoute({ user, role, children }) {
+  // 1. If user is still null after loading, they aren't logged in
   if (!user) {
     return <Navigate to="/login" replace />;
   }
 
-  if (role && user.role?.toLowerCase() !== role.toLowerCase()) {
-    console.warn(`Unauthorized Access: User is ${user.role}, but route requires ${role}`);
+  // 2. Normalize roles to catch "Buyer" vs "buyer" mismatches
+  const currentUserRole = user.role?.toString().toLowerCase();
+  const targetRole = role?.toString().toLowerCase();
+
+  if (role && currentUserRole !== targetRole) {
+    console.warn(`Access Denied: Route needs ${targetRole}, User is ${currentUserRole}`);
     return <Navigate to="/" replace />;
   }
 
