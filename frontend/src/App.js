@@ -17,7 +17,7 @@ import FlowerDetails from "./pages/FlowerDetails";
 import FloristFlowerManagement from "./pages/FloristFlowerManagement";
 import { ForgotPassword, ResetPassword } from "./pages/AuthFlow";
 
-// ✅ Components (Dashboard views) - UPDATED PATHS
+// ✅ Components (Dashboard views)
 import BuyerDashboard from "./components/BuyerDashboard";
 import FloristDashboard from "./components/FloristDashboard";
 
@@ -35,6 +35,7 @@ function App() {
         setUser(parsedUser);
         api.setAuthToken(token);
       } catch (e) {
+        console.error("Session sync failed:", e);
         localStorage.clear();
       }
     }
@@ -44,7 +45,7 @@ function App() {
   if (loadingUser) {
     return (
       <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh" }}>
-        <h3>Loading Flora X...</h3>
+        <h3 style={{ fontFamily: 'serif', letterSpacing: '2px' }}>FLORA X IS LOADING...</h3>
       </div>
     );
   }
@@ -53,6 +54,7 @@ function App() {
     <CartProvider>
       <BrowserRouter>
         <Routes>
+          {/* ================= PUBLIC ROUTES ================= */}
           <Route path="/" element={<Landing user={user} />} />
           <Route path="/browse" element={<BrowseFlowers />} />
           <Route path="/login" element={<Login setUser={setUser} />} />
@@ -60,23 +62,25 @@ function App() {
           <Route path="/flower-details/:flowerId" element={<FlowerDetails />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/payment-callback" element={<PaymentCallback />} />
 
-          {/* Buyer Routes */}
+          {/* ================= BUYER ROUTES ================= */}
           <Route path="/buyer-dashboard" element={
             <ProtectedRoute user={user} role="buyer">
               <BuyerDashboard user={user} />
             </ProtectedRoute>
           } />
           
+          {/* FIX: Removed role="buyer" requirement from Checkout. 
+              As long as the user is logged in, they can access the bag.
+          */}
           <Route path="/checkout" element={
-            <ProtectedRoute user={user} role="buyer">
+            <ProtectedRoute user={user}>
               <Checkout user={user} />
             </ProtectedRoute>
           } />
 
-          <Route path="/payment-callback" element={<PaymentCallback />} />
-
-          {/* Florist Routes */}
+          {/* ================= FLORIST ROUTES ================= */}
           <Route path="/florist-dashboard" element={
             <ProtectedRoute user={user} role="florist">
               <FloristDashboard user={user} />
@@ -89,6 +93,7 @@ function App() {
             </ProtectedRoute>
           } />
 
+          {/* ================= FALLBACK ================= */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>
@@ -96,15 +101,31 @@ function App() {
   );
 }
 
+/**
+ * 🛡️ Smart Protected Route
+ * Now includes console logging to help you debug role mismatches.
+ */
 function ProtectedRoute({ user, role, children }) {
-  if (!user) return <Navigate to="/login" replace />;
-  
-  const userRole = user.role?.toString().toLowerCase();
-  const targetRole = role?.toString().toLowerCase();
+  // 1. If no user session, go to login
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
 
-  if (role && userRole !== targetRole) {
+  // 2. If no specific role is required (like our new Checkout fix), let them through
+  if (!role) return children;
+
+  const userRole = user.role?.toString().toLowerCase().trim();
+  const targetRole = role?.toString().toLowerCase().trim();
+
+  // Log to F12 Console so you can see why a redirect happens
+  console.log(`Guard Check: User is [${userRole}], Route needs [${targetRole}]`);
+
+  // 3. Check for specific role mismatch
+  if (userRole !== targetRole) {
+    console.warn("🚫 Access Denied: Redirecting to Landing.");
     return <Navigate to="/" replace />;
   }
+
   return children;
 }
 
