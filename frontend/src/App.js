@@ -3,10 +3,10 @@ import React, { useState, useEffect } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import api from "./api/axios";
 
-// ✅ Context
+// Context
 import { CartProvider } from "./context/CartContext";
 
-// ✅ Pages (Full screen views)
+// Pages 
 import Landing from "./pages/Landing";
 import BrowseFlowers from "./pages/BrowseFlowers";
 import Login from "./pages/Login";
@@ -17,7 +17,7 @@ import FlowerDetails from "./pages/FlowerDetails";
 import FloristFlowerManagement from "./pages/FloristFlowerManagement";
 import { ForgotPassword, ResetPassword } from "./pages/AuthFlow";
 
-// ✅ Components (Dashboard views)
+// Components
 import BuyerDashboard from "./components/BuyerDashboard";
 import FloristDashboard from "./components/FloristDashboard";
 
@@ -35,7 +35,6 @@ function App() {
         setUser(parsedUser);
         api.setAuthToken(token);
       } catch (e) {
-        console.error("Session sync failed:", e);
         localStorage.clear();
       }
     }
@@ -45,7 +44,7 @@ function App() {
   if (loadingUser) {
     return (
       <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh" }}>
-        <h3 style={{ fontFamily: 'serif', letterSpacing: '2px' }}>FLORA X IS LOADING...</h3>
+        <h3>🌸 Loading Flora X...</h3>
       </div>
     );
   }
@@ -54,7 +53,7 @@ function App() {
     <CartProvider>
       <BrowserRouter>
         <Routes>
-          {/* ================= PUBLIC ROUTES ================= */}
+          {/* Public Routes */}
           <Route path="/" element={<Landing user={user} />} />
           <Route path="/browse" element={<BrowseFlowers />} />
           <Route path="/login" element={<Login setUser={setUser} />} />
@@ -64,23 +63,22 @@ function App() {
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/payment-callback" element={<PaymentCallback />} />
 
-          {/* ================= BUYER ROUTES ================= */}
+          {/* 🛡️ Buyer Dashboard - Strict Role Check */}
           <Route path="/buyer-dashboard" element={
             <ProtectedRoute user={user} role="buyer">
               <BuyerDashboard user={user} />
             </ProtectedRoute>
           } />
           
-          {/* FIX: Removed role="buyer" requirement from Checkout. 
-              As long as the user is logged in, they can access the bag.
+          {/* 🛡️ CHECKOUT - Flexible Role Check (Fixes the Bag Link)
+              We only check if the user is logged in. 
+              This prevents "buyer" vs "Buyer" vs "customer" string mismatches.
           */}
           <Route path="/checkout" element={
-            <ProtectedRoute user={user}>
-              <Checkout user={user} />
-            </ProtectedRoute>
+            user ? <Checkout user={user} /> : <Navigate to="/login" replace />
           } />
 
-          {/* ================= FLORIST ROUTES ================= */}
+          {/* 🛡️ Florist Routes */}
           <Route path="/florist-dashboard" element={
             <ProtectedRoute user={user} role="florist">
               <FloristDashboard user={user} />
@@ -93,7 +91,7 @@ function App() {
             </ProtectedRoute>
           } />
 
-          {/* ================= FALLBACK ================= */}
+          {/* Fallback */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>
@@ -102,27 +100,17 @@ function App() {
 }
 
 /**
- * 🛡️ Smart Protected Route
- * Now includes console logging to help you debug role mismatches.
+ * Enhanced ProtectedRoute with Logging
  */
 function ProtectedRoute({ user, role, children }) {
-  // 1. If no user session, go to login
-  if (!user) {
-    return <Navigate to="/login" replace />;
-  }
-
-  // 2. If no specific role is required (like our new Checkout fix), let them through
-  if (!role) return children;
-
+  if (!user) return <Navigate to="/login" replace />;
+  
   const userRole = user.role?.toString().toLowerCase().trim();
   const targetRole = role?.toString().toLowerCase().trim();
 
-  // Log to F12 Console so you can see why a redirect happens
-  console.log(`Guard Check: User is [${userRole}], Route needs [${targetRole}]`);
-
-  // 3. Check for specific role mismatch
-  if (userRole !== targetRole) {
-    console.warn("🚫 Access Denied: Redirecting to Landing.");
+  // Log to console so you can see why a redirect happens
+  if (role && userRole !== targetRole) {
+    console.warn(`Access Denied for route ${targetRole}. User is ${userRole}`);
     return <Navigate to="/" replace />;
   }
 

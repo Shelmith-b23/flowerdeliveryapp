@@ -1,11 +1,12 @@
-// src/pages/BrowseFlowers.js
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import api from "../api/axios";
+import { useCart } from "../context/CartContext"; // 1. Import the hook
 
 export default function BrowseFlowers() {
   const [flowers, setFlowers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const { addToCart } = useCart(); // 2. Grab the function
 
   useEffect(() => {
     const fetchFlowers = async () => {
@@ -23,14 +24,9 @@ export default function BrowseFlowers() {
 
   return (
     <div className="browse-page">
-      {/* Editorial Header */}
       <header className="browse-header">
         <span className="text-uppercase" style={{ color: 'var(--fora-slate)' }}>The Collection</span>
         <h1 style={{ marginTop: '10px' }}>Seasonal Offerings</h1>
-        <p style={{ maxWidth: '500px', margin: '20px auto', color: 'var(--fora-slate)' }}>
-          A curated selection of the world’s most exquisite botanical specimens, 
-          sourced directly from our network of independent floral artists.
-        </p>
       </header>
 
       <main className="browse-container">
@@ -41,45 +37,42 @@ export default function BrowseFlowers() {
         ) : (
           <div className="flower-collection-grid">
             {flowers.map((flower) => (
-              <Link 
-                to={`/flower-details/${flower.id}`} 
-                key={flower.id} 
-                className="editorial-card"
-              >
-                <div className="img-wrapper">
-                  <img 
-                    src={flower.image_url || "https://placehold.co/600x800?text=No+Image"} 
-                    alt={flower.name} 
-                  />
-                  {flower.stock_status === 'out_of_stock' && (
-                    <div className="stock-badge" style={{ background: 'var(--fora-dark)' }}>
-                      Archive Only
-                    </div>
-                  )}
-                </div>
-                
-                <span className="card-category">
-                  {flower.shop_name || "Boutique Exclusive"}
-                </span>
-                
-                <div className="card-meta">
-                  <h3 className="card-title">{flower.name}</h3>
-                  <span className="card-price">KSh {parseFloat(flower.price).toLocaleString()}</span>
-                </div>
-                
-                <p style={{ fontSize: '0.85rem', marginTop: '10px', color: 'var(--fora-slate)' }}>
-                  {flower.description?.substring(0, 60)}...
-                </p>
-              </Link>
+              <div key={flower.id} className="editorial-card-wrapper">
+                {/* Image & Details Link */}
+                <Link to={`/flower-details/${flower.id}`} className="editorial-card">
+                  <div className="img-wrapper">
+                    <img src={flower.image_url || "https://placehold.co/600x800?text=No+Image"} alt={flower.name} />
+                  </div>
+                  <span className="card-category">{flower.shop_name || "Boutique Exclusive"}</span>
+                  <div className="card-meta">
+                    <h3 className="card-title">{flower.name}</h3>
+                    <span className="card-price">KSh {parseFloat(flower.price).toLocaleString()}</span>
+                  </div>
+                </Link>
+
+                {/* 3. QUICK ADD BUTTON (Prevents empty bag redirect) */}
+                <button 
+                  className="btn-add-quick"
+                  onClick={() => addToCart(flower)}
+                  style={{
+                    width: '100%',
+                    marginTop: '15px',
+                    padding: '12px',
+                    fontSize: '10px',
+                    letterSpacing: '2px',
+                    textTransform: 'uppercase',
+                    border: '1px solid #1A1A1A',
+                    background: 'transparent',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Add to Selection
+                </button>
+              </div>
             ))}
           </div>
         )}
       </main>
-
-      {/* Subtle Footer spacing */}
-      <footer style={{ padding: '100px 0', textAlign: 'center' }}>
-        <Link to="/" className="btn-fora btn-outline">Back to Gallery</Link>
-      </footer>
     </div>
   );
 }

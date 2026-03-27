@@ -1,28 +1,37 @@
+// src/context/CartContext.js
 import { createContext, useContext, useState, useEffect } from "react";
 
 const CartContext = createContext(null);
 
 export function CartProvider({ children }) {
-  // Initialize from localStorage so the bag doesn't empty on refresh
+  // Use a consistent key: "flora_x_cart"
+  const CART_KEY = "flora_x_cart";
+
   const [cartItems, setCartItems] = useState(() => {
-    const saved = localStorage.getItem("flora_cart");
-    return saved ? JSON.parse(saved) : [];
+    try {
+      const saved = localStorage.getItem(CART_KEY);
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      return [];
+    }
   });
 
-  // Sync to localStorage whenever cart changes
   useEffect(() => {
-    localStorage.setItem("flora_cart", JSON.stringify(cartItems));
+    localStorage.setItem(CART_KEY, JSON.stringify(cartItems));
   }, [cartItems]);
 
-  const addToCart = (flower) => {
+  // UPDATED: Added 'quantityToAdd' parameter to handle bulk adds from FlowerDetails
+  const addToCart = (flower, quantityToAdd = 1) => {
     setCartItems((prev) => {
       const existing = prev.find((item) => item.id === flower.id);
       if (existing) {
         return prev.map((item) =>
-          item.id === flower.id ? { ...item, quantity: item.quantity + 1 } : item
+          item.id === flower.id 
+            ? { ...item, quantity: item.quantity + quantityToAdd } 
+            : item
         );
       }
-      return [...prev, { ...flower, quantity: 1 }];
+      return [...prev, { ...flower, quantity: quantityToAdd }];
     });
   };
 
@@ -48,9 +57,11 @@ export function CartProvider({ children }) {
     );
   };
 
-  const clearCart = () => setCartItems([]);
+  const clearCart = () => {
+    setCartItems([]);
+    localStorage.removeItem(CART_KEY);
+  };
 
-  // Computed Values for the UI
   const subtotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   const cartCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
 
@@ -58,7 +69,7 @@ export function CartProvider({ children }) {
     <CartContext.Provider
       value={{
         cartItems,
-        cartCount, // Now available for TopNav
+        cartCount,
         addToCart,
         removeFromCart,
         increaseQty,
