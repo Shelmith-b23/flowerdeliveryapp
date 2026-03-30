@@ -15,25 +15,18 @@ export default function PaymentCallback() {
 
   const verifyPayment = useCallback(async () => {
     try {
-      // Priority 1: URL Params (Most reliable) 
-      // Priority 2: localStorage (Fallback)
-      const reference = trackingId || localStorage.getItem("pesapal_reference");
       const orderId = merchantRef || localStorage.getItem("order_id");
 
-      if (!reference || !orderId) {
+      if (!orderId) {
         setStatus("error");
         setLoading(false);
         return;
       }
 
-      const res = await api.post("/payment/pesapal/verify", {
-        order_id: orderId, // Use the ID from PesaPal
-        reference_id: reference,
-      });
+      const res = await api.get(`/payment/daraja/check-status/${orderId}`);
 
-      if (res.data.success && (res.data.status === "completed" || res.data.status === "Success")) {
+      if (res.data.paid) {
         setStatus("success");
-        // Redirect to the new "Buyer Dashboard" we built earlier
         setTimeout(() => navigate("/buyer-dashboard"), 3000);
       } else if (res.data.status === "pending") {
         setStatus("pending");
@@ -47,8 +40,7 @@ export default function PaymentCallback() {
     } finally {
       setLoading(false);
     }
-  }, [navigate, trackingId, merchantRef]);
-
+  }, [navigate, merchantRef]);
   useEffect(() => {
     verifyPayment();
   }, [verifyPayment]);

@@ -1,237 +1,100 @@
-"""
-PesaPal Payment Integration Module
-Handles PesaPal API calls for order payment processing
-"""
-
 import requests
 import os
+import base64
 from datetime import datetime
-import hmac
-import hashlib
 import json
 
-class PesaPalPayment:
-    """PesaPal Payment Gateway Integration"""
-    
-    # PesaPal API endpoints
-    PESAPAL_API_URL = "https://demo.pesapal.com/api/api" if os.getenv("PESAPAL_SANDBOX", "true").lower() == "true" else "https://pesapal.com/api/api"
-    PESAPAL_IFRAME_URL = "https://demo.pesapal.com/api/PostPesapalDirectOrder" if os.getenv("PESAPAL_SANDBOX", "true").lower() == "true" else "https://pesapal.com/api/PostPesapalDirectOrder"
+class DarajaPayment:
+    """M-Pesa Daraja API Integration for Flora X"""
     
     def __init__(self):
-        """Initialize PesaPal with credentials from environment"""
-        self.consumer_key = os.getenv("qkio1BGGYAXTu2JOfm7XSXNruoZsrqEW")
-        self.consumer_secret = os.getenv("osGQ364R49cXKeOYSpaOnT++rHs=")
-        self.merchant_reference_id = os.getenv("PESAPAL_MERCHANT_ID")
-        self.pesapal_public_key = os.getenv("PESAPAL_PUBLIC_KEY")
+        # Safaricom Credentials
+        self.consumer_key = os.getenv("HqhGVAJr87JrttPES21GO8ZC15FJgh7WwXZ46sH29W4pGYcx") or os.getenv("DARAJA_KEY")
+        self.consumer_secret = os.getenv("B6tjDwAO5RUMrU4Cd3CPqg0GJ3d10nL7RRdLuERhFjLvAnsgFNZbZPev5YAArIqV") or os.getenv("DARAJA_SECRET")
+        self.shortcode = os.getenv("DARAJA_BUSINESS_SHORTCODE") or os.getenv("DARAJA_SHORTCODE")
+        self.passkey = os.getenv("DARAJA_PASSKEY") or os.getenv("DARAJA_KEY_PASS")
+        self.callback_url = os.getenv("DARAJA_CALLBACK_URL", "https://flowerdeliveryapp-aid0.onrender.com/payment/callback")
+        
+        # Determine Environment
+        self.is_sandbox = os.getenv("DARAJA_MODE", "sandbox").lower() == "sandbox"
+        self.base_url = "https://sandbox.safaricom.co.ke" if self.is_sandbox else "https://api.safaricom.co.ke"
 
-        # Validate required credentials
-        missing = [k for k,v in {
-            'PESAPAL_CONSUMER_KEY': self.consumer_key,
-            'PESAPAL_CONSUMER_SECRET': self.consumer_secret,
-            'PESAPAL_MERCHANT_ID': self.merchant_reference_id
-        }.items() if not v]
+        # Check for Mock Mode if keys are missing
+        self.mock_mode = not all([self.consumer_key, self.consumer_secret, self.passkey])
+        if self.mock_mode:
+            print("⚠️ DARAJA KEYS MISSING: Flora X is running in MOCK PAYMENT MODE.")
 
-        if missing:
-            raise ValueError(f"Missing required PesaPal environment variables: {', '.join(missing)}")
-    
-    def generate_request_token(self):
-        """
-        Generate a request token for PesaPal API calls
-        Returns the OAuth token needed for authentication
-        """
+    def _sanitize_phone(self, phone):
+        """Convert phone to 2547XXXXXXXX format"""
+        phone = str(phone).strip().replace("+", "")
+        if phone.startswith("0"):
+            return "254" + phone[1:]
+        elif phone.startswith("7") or phone.startswith("1"):
+            return "254" + phone
+        return phone
+
+    def get_access_token(self):
+        """Get OAuth2 token from Safaricom"""
+        if self.mock_mode: return "mock_access_token"
+        
+        url = f"{self.base_url}/oauth/v1/generate?grant_type=client_credentials"
         try:
-            url = f"{self.PESAPAL_API_URL}/get-token"
-            
-            params = {
-                "consumer_key": self.consumer_key,
-                "consumer_secret": self.consumer_secret,
-                "timestamp": self._get_timestamp()
-            }
-            
-            # Create signature
-            signature = self._create_signature(params)
-            params["signature"] = signature
-            
-            response = requests.get(url, params=params, timeout=10)
+            response = requests.get(url, auth=(self.consumer_key, self.consumer_secret), timeout=10)
             response.raise_for_status()
-            
-            # Parse response - PesaPal returns JSON with token
-            data = response.json()
-            if "token" in data:
-                return data["token"]
+            return response.json().get("access_token")
+        except Exception as e:
+            print(f"Daraja Token Error: {e}")
             return None
-            
-        except Exception as e:
-            print(f"Error generating PesaPal request token: {str(e)}")
-            return None
-    
-    def create_payment_iframe(self, order_id, amount, email, phone, first_name, last_name):
-        """
-        Generate PesaPal payment iframe URL for checkout
-        
-        Args:
-            order_id: Unique order ID
-            amount: Total payment amount in KES
-            email: Buyer email
-            phone: Buyer phone number
-            first_name: Buyer first name
-            last_name: Buyer last name
-        
-        Returns:
-            dict with iframe_url and payment_reference
-        """
-        try:
-            # Generate unique reference
-            reference = f"ORD_{order_id}_{datetime.utcnow().timestamp()}"
-            
-            # Build payment parameters
-            params = {
-                "pesapal_request_data": self._build_payment_request(
-                    reference, amount, email, phone, first_name, last_name
-                ),
-                "pesapal_response_type": "JSON"
-            }
-            
-            # Create signature
-            signature = self._create_signature(params)
-            params["pesapal_signature"] = signature
-            
-            # Return iframe URL with parameters
-            iframe_url = self._build_iframe_url(params)
-            
-            return {
-                "success": True,
-                "iframe_url": iframe_url,
-                "reference": reference
-            }
-            
-        except Exception as e:
-            print(f"Error creating PesaPal payment iframe: {str(e)}")
-            return {
-                "success": False,
-                "error": str(e)
-            }
-    
-    def verify_payment(self, reference_id, checksum):
-        """
-        Verify payment status from PesaPal
-        
-        Args:
-            reference_id: PesaPal payment reference ID
-            checksum: Security checksum from PesaPal callback
-        
-        Returns:
-            dict with payment verification details
-        """
-        try:
-            token = self.generate_request_token()
-            if not token:
-                return {"success": False, "error": "Could not generate token"}
-            
-            url = f"{self.PESAPAL_API_URL}/query-payment-details"
-            
-            params = {
-                "reference": reference_id,
-                "pesapal_merchant_reference": reference_id,
-                "pesapal_transaction_tracking_id": reference_id,
-                "token": token,
-                "timestamp": self._get_timestamp()
-            }
-            
-            response = requests.get(url, params=params, timeout=10)
-            response.raise_for_status()
-            
-            payment_data = response.json()
-            
-            return {
-                "success": True,
-                "status": payment_data.get("status"),
-                "reference": payment_data.get("reference"),
-                "amount": payment_data.get("amount"),
-                "currency": payment_data.get("currency", "KES")
-            }
-            
-        except Exception as e:
-            print(f"Error verifying PesaPal payment: {str(e)}")
-            return {
-                "success": False,
-                "error": str(e)
-            }
-    
-    def _build_payment_request(self, reference, amount, email, phone, first_name, last_name):
-        """Build XML payment request for PesaPal"""
-        xml_request = f"""
-        <PesapalPayload>
-            <TransactionType>PAYMENT</TransactionType>
-            <Reference>{reference}</Reference>
-            <Amount>{amount}</Amount>
-            <Currency>KES</Currency>
-            <Description>Flower Delivery Order {reference}</Description>
-            <CustomerEmail>{email}</CustomerEmail>
-            <CustomerPhone>{phone}</CustomerPhone>
-            <CustomerFirstName>{first_name}</CustomerFirstName>
-            <CustomerLastName>{last_name}</CustomerLastName>
-            <CallbackUrl>{self._get_callback_url()}</CallbackUrl>
-        </PesapalPayload>
-        """
-        return xml_request
-    
-    def _create_signature(self, params):
-        """
-        Create HMAC-SHA1 signature for PesaPal requests
-        
-        Args:
-            params: Dictionary of parameters to sign
-        
-        Returns:
-            Base64 encoded signature
-        """
-        try:
-            # Sort parameters and create query string
-            sorted_params = sorted(params.items())
-            query_string = "&".join([f"{k}={v}" for k, v in sorted_params])
-            
-            # Create HMAC-SHA1 signature
-            signature = hmac.new(
-                self.consumer_secret.encode(),
-                query_string.encode(),
-                hashlib.sha1
-            ).digest()
-            
-            # Convert to base64
-            import base64
-            return base64.b64encode(signature).decode()
-            
-        except Exception as e:
-            print(f"Error creating signature: {str(e)}")
-            return ""
-    
-    def _get_timestamp(self):
-        """Get current timestamp in Unix format"""
-        return str(int(datetime.utcnow().timestamp()))
-    
-    def _get_callback_url(self):
-        """Get the callback URL for PesaPal to return to after payment"""
-        callback_url = os.getenv("PESAPAL_CALLBACK_URL", "https://flora-x.pages.dev/payment-callback")
-        return callback_url
-    
-    def _build_iframe_url(self, params):
-        """Build the complete iframe URL with encoded parameters"""
-        import base64
-        
-        # Encode payment request
-        payment_request_encoded = base64.b64encode(
-            params["pesapal_request_data"].encode()
-        ).decode()
-        
-        # Build URL with parameters
-        iframe_url = f"{self.PESAPAL_IFRAME_URL}?pesapal_request_data={payment_request_encoded}"
-        iframe_url += f"&pesapal_response_type={params['pesapal_response_type']}"
-        iframe_url += f"&pesapal_merchant_reference={self.merchant_reference_id}"
-        iframe_url += f"&pesapal_signature={params['pesapal_signature']}"
-        
-        return iframe_url
 
+    def trigger_stk_push(self, phone, amount, order_id):
+        """
+        Initiates the STK Push (M-Pesa PIN prompt)
+        """
+        if self.mock_mode:
+            return {"success": True, "CheckoutRequestID": "MOCK_LNM_123", "CustomerMessage": "Mock Push Sent"}
+
+        token = self.get_access_token()
+        if not token:
+            return {"success": False, "error": "Authentication failed"}
+
+        formatted_phone = self._sanitize_phone(phone)
+        timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
+        
+        # Password = Base64(ShortCode + Passkey + Timestamp)
+        password_str = f"{self.shortcode}{self.passkey}{timestamp}"
+        password = base64.b64encode(password_str.encode()).decode()
+
+        headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+        
+        payload = {
+            "BusinessShortCode": self.shortcode,
+            "Password": password,
+            "Timestamp": timestamp,
+            "TransactionType": "CustomerPayBillOnline", # Use CustomerBuyGoodsOnline for Till
+            "Amount": int(amount),
+            "PartyA": formatted_phone,
+            "PartyB": self.shortcode,
+            "PhoneNumber": formatted_phone,
+            "CallBackURL": self.callback_url,
+            "AccountReference": f"FLORA-{order_id}",
+            "TransactionDesc": f"Payment for Flora X Order {order_id}"
+        }
+
+        try:
+            url = f"{self.base_url}/mpesa/stkpush/v1/processrequest"
+            response = requests.post(url, json=payload, headers=headers, timeout=15)
+            response.raise_for_status()
+            res_data = response.json()
+            
+            # ResponseCode "0" means the prompt was successfully sent to the phone
+            return {
+                "success": res_data.get("ResponseCode") == "0",
+                "CheckoutRequestID": res_data.get("CheckoutRequestID"),
+                "CustomerMessage": res_data.get("CustomerMessage"),
+                "raw_response": res_data
+            }
+        except Exception as e:
+            return {"success": False, "error": str(e)}
 
 # Singleton instance
-pesapal = PesaPalPayment()
+daraja = DarajaPayment()

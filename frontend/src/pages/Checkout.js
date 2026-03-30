@@ -12,6 +12,10 @@ export default function Checkout({ user }) {
   const [error, setError] = useState("");
   const navigate = useNavigate();
 
+  const [paymentStatus, setPaymentStatus] = useState(null);
+  const [checkoutOrder, setCheckoutOrder] = useState(null);
+  const [paymentPrompt, setPaymentPrompt] = useState("");
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
@@ -39,17 +43,35 @@ export default function Checkout({ user }) {
 
       const orderId = orderRes.data.order_id;
 
-      // Use pesapal initialization route
-      const paymentRes = await api.post("/payment/pesapal/initialize", { order_id: orderId });
-      const reference = paymentRes.data.reference;
-      const iframeUrl = paymentRes.data.iframe_url;
+      // Use M-Pesa Daraja initialization route
+      const paymentRes = await api.post("/payment/daraja/initialize", { order_id: orderId });
+      const checkoutRequestId = paymentRes.data.checkout_request_id;
+      const message = paymentRes.data.message;
 
-      localStorage.setItem("pesapal_reference", reference);
+      localStorage.setItem("mpesa_checkout_request_id", checkoutRequestId);
       localStorage.setItem("order_id", orderId);
       clearCart();
 
-      // Redirect to PesaPal iframe for payment
-      window.location.href = iframeUrl;
+      setCheckoutOrder(orderId);
+      setPaymentStatus("pending");
+      setPaymentPrompt(message || "STK Push has been sent to your phone. Complete the payment prompt.");
+
+      const polling = setInterval(async () => {
+        try {
+          const statusRes = await api.get(`/payment/daraja/check-status/${orderId}`);
+          if (statusRes.data.paid) {
+            clearInterval(polling);
+            setPaymentStatus("success");
+            setTimeout(() => navigate("/buyer-dashboard"), 2500);
+          }
+        } catch (err) {
+          console.warn("Could not check payment status", err);
+        }
+      }, 6000);
+
+      // Stop polling after 2 minutes
+      setTimeout(() => clearInterval(polling), 120000);
+
     } catch (err) {
       console.error("Checkout error:", err);
       setError(err.response?.data?.error || err.message || "Unable to complete checkout.");
@@ -61,6 +83,19 @@ export default function Checkout({ user }) {
   return (
     <div className="checkout-container" style={{ minHeight: "70vh", padding: "40px" }}>
       <h1 className="text-uppercase">Checkout</h1>
+
+      {paymentStatus === "pending" && (
+        <div className="auth-success-box" style={{ marginBottom: '20px' }}>
+          <p>{paymentPrompt}</p>
+          <p>Waiting for confirmation. You will be redirected when payment completes.</p>
+        </div>
+      )}
+
+      {paymentStatus === "success" && (
+        <div className="auth-success-box" style={{ marginBottom: '20px' }}>
+          <p>✅ Payment confirmed! Redirecting to your dashboard...</p>
+        </div>
+      )}
 
       {cartItems.length === 0 ? (
         <div>

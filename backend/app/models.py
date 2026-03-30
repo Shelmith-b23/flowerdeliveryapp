@@ -73,8 +73,8 @@ class Order(db.Model):
     total_price = db.Column(db.Float, nullable=False)
     status = db.Column(db.String(50), default="pending")  # pending, paid, processing, delivered
     paid = db.Column(db.Boolean, default=False)
-    payment_method = db.Column(db.String(50), default="pesapal")  # pesapal, cash, card, etc.
-    pesapal_reference = db.Column(db.String(100), nullable=True)  # PesaPal reference ID
+    payment_method = db.Column(db.String(50), default="mpesa")  # mpesa, cash, card, etc.
+    pesapal_reference = db.Column(db.String(100), nullable=True)  # legacy payment reference (PesaPal or M-Pesa checkout ID)
     
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
