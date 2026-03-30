@@ -48,11 +48,8 @@ export default function Checkout({ user }) {
       localStorage.setItem("order_id", orderId);
       clearCart();
 
-      if (iframeUrl) {
-        window.location.href = `/payment-callback?OrderMerchantReference=${orderId}&OrderTrackingId=${reference}`;
-      } else {
-        navigate(`/payment-callback?OrderMerchantReference=${orderId}&OrderTrackingId=${reference}`);
-      }
+      // Redirect to PesaPal iframe for payment
+      window.location.href = iframeUrl;
     } catch (err) {
       console.error("Checkout error:", err);
       setError(err.response?.data?.error || err.message || "Unable to complete checkout.");

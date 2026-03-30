@@ -14,15 +14,19 @@ class PesaPalPayment:
     """PesaPal Payment Gateway Integration"""
     
     # PesaPal API endpoints
-    PESAPAL_API_URL = "https://pesapal.com/api/api"
-    PESAPAL_IFRAME_URL = "https://pesapal.com/api/PostPesapalDirectOrder"
+    PESAPAL_API_URL = "https://demo.pesapal.com/api/api" if os.getenv("PESAPAL_SANDBOX", "true").lower() == "true" else "https://pesapal.com/api/api"
+    PESAPAL_IFRAME_URL = "https://demo.pesapal.com/api/PostPesapalDirectOrder" if os.getenv("PESAPAL_SANDBOX", "true").lower() == "true" else "https://pesapal.com/api/PostPesapalDirectOrder"
     
     def __init__(self):
         """Initialize PesaPal with credentials from environment"""
-        self.consumer_key = os.getenv("PESAPAL_CONSUMER_KEY", "vGoEp880+4Oix0t56wVLkyWg1T8n8F/q")
-        self.consumer_secret = os.getenv("PESAPAL_CONSUMER_SECRET", "3quLzptUCXShb7VBEnC2FVsiQa8=")
-        self.merchant_reference_id = os.getenv("PESAPAL_MERCHANT_ID", "your_merchant_id")
-        self.pesapal_public_key = os.getenv("PESAPAL_PUBLIC_KEY", "your_public_key")
+        self.consumer_key = os.getenv("qkio1BGGYAXTu2JOfm7XSXNruoZsrqEW")
+        self.consumer_secret = os.getenv("osGQ364R49cXKeOYSpaOnT++rHs=")
+        self.merchant_reference_id = os.getenv("PESAPAL_MERCHANT_ID")
+        self.pesapal_public_key = os.getenv("PESAPAL_PUBLIC_KEY")
+        
+        # Validate required credentials
+        if not all([self.consumer_key, self.consumer_secret, self.merchant_reference_id]):
+            raise ValueError("Missing required PesaPal environment variables")
     
     def generate_request_token(self):
         """
