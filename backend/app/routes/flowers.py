@@ -24,6 +24,16 @@ def add_flower():
     
     file = request.files.get("image_file")
     image_url = request.form.get("image_url")
+
+    # Allow JSON payload fallback for API clients that send JSON
+    payload = request.get_json(silent=True) or {}
+    print('DEBUG ADD_FLOWER', 'headers', dict(request.headers), 'form', request.form, 'payload', payload)
+    if payload:
+        name = name or payload.get("name")
+        price = price or payload.get("price")
+        description = description or payload.get("description")
+        image_url = image_url or payload.get("image_url")
+
     saved_path = None
 
     if file and allowed_file(file.filename):

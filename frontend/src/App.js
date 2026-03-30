@@ -15,6 +15,7 @@ import Checkout from "./pages/Checkout";
 import PaymentCallback from "./pages/PaymentCallback";
 import FlowerDetails from "./pages/FlowerDetails";
 import FloristFlowerManagement from "./pages/FloristFlowerManagement";
+import Cart from "./pages/Cart";
 import { ForgotPassword, ResetPassword } from "./pages/AuthFlow";
 
 // Components
@@ -70,6 +71,7 @@ function App() {
             </ProtectedRoute>
           } />
           
+          <Route path="/cart" element={<Cart />} />
           {/* 🛡️ CHECKOUT - Flexible Role Check (Fixes the Bag Link)
               We only check if the user is logged in. 
               This prevents "buyer" vs "Buyer" vs "customer" string mismatches.

@@ -68,6 +68,8 @@ export default function ForgotAndResetPassword() {
                   <label className="text-uppercase">New Password</label>
                   <input 
                     type="password" 
+                    name="new-password"
+                    autoComplete="new-password"
                     className="fora-input" 
                     onChange={(e) => setPassword(e.target.value)} 
                     required 
@@ -77,6 +79,8 @@ export default function ForgotAndResetPassword() {
                   <label className="text-uppercase">Confirm Password</label>
                   <input 
                     type="password" 
+                    name="confirm-password"
+                    autoComplete="new-password"
                     className="fora-input" 
                     onChange={(e) => setConfirmPassword(e.target.value)} 
                     required 
@@ -89,6 +93,8 @@ export default function ForgotAndResetPassword() {
                 <label className="text-uppercase">Registered Email</label>
                 <input 
                   type="email" 
+                  name="email"
+                  autoComplete="email"
                   className="fora-input" 
                   placeholder="name@example.com"
                   onChange={(e) => setEmail(e.target.value)} 

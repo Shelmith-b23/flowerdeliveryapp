@@ -27,6 +27,11 @@ export default function Cart() {
       
       <hr />
       <h3>Total: KSh {subtotal}</h3>
+      {cartItems.length > 0 && (
+        <button className="btn-fora" onClick={() => window.location.href = '/checkout'} style={{ marginTop: '20px' }}>
+          Proceed to Checkout
+        </button>
+      )}
     </div>
   );
 }

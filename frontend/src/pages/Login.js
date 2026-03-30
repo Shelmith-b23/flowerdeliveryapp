@@ -52,6 +52,8 @@ export default function Login({ setUser }) {
             <label className="text-uppercase">Email Address</label>
             <input 
               type="email" 
+              name="email"
+              autoComplete="email"
               className="fora-input" 
               placeholder="name@example.com"
               value={email}
@@ -71,6 +73,8 @@ export default function Login({ setUser }) {
             <div style={{ position: 'relative' }}>
               <input 
                 type={showPassword ? "text" : "password"} 
+                name="password"
+                autoComplete="current-password"
                 className="fora-input" 
                 style={{ paddingRight: '50px' }} // Room for the eye
                 value={password}

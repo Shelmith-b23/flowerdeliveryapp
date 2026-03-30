@@ -24,7 +24,8 @@ export default function FloristFlowerManagement({ user }) {
   const fetchMyFlowers = async () => {
     setLoading(true);
     try {
-      const res = await api.get("/florist/my-flowers");
+      // Backend route is /api/flowers/florist/my-flowers
+      const res = await api.get("/flowers/florist/my-flowers");
       setFlowers(res.data || []);
     } catch (err) {
       console.error("Error fetching collection:", err);
@@ -36,7 +37,13 @@ export default function FloristFlowerManagement({ user }) {
   const handleUpload = async (e) => {
     e.preventDefault();
     const formData = new FormData();
-    Object.keys(newFlower).forEach(key => formData.append(key, newFlower[key]));
+    formData.append("name", newFlower.name);
+    formData.append("price", newFlower.price);
+    formData.append("description", newFlower.description);
+    formData.append("category", newFlower.category);
+    if (newFlower.image) {
+      formData.append("image_file", newFlower.image);
+    }
     formData.append("florist_id", user.id);
 
     try {

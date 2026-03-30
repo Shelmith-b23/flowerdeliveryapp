@@ -23,8 +23,8 @@ export default function Register({ setUser }) {
         <span className="text-uppercase">Registration</span>
         <h2>Join Flora X</h2>
         <form onSubmit={handleRegister} className="modal-form">
-          <input type="text" className="fora-input" placeholder="Name" onChange={(e) => setForm({...form, name: e.target.value})} required />
-          <input type="email" className="fora-input" placeholder="Email" onChange={(e) => setForm({...form, email: e.target.value})} required />
+          <input type="text" name="name" autoComplete="name" className="fora-input" placeholder="Name" onChange={(e) => setForm({...form, name: e.target.value})} required />
+          <input type="email" name="email" autoComplete="email" className="fora-input" placeholder="Email" onChange={(e) => setForm({...form, email: e.target.value})} required />
           <select className="fora-input" onChange={(e) => setForm({...form, role: e.target.value})}>
             <option value="buyer">Collector (Buyer)</option>
             <option value="florist">Floral Artist (Florist)</option>
@@ -32,7 +32,7 @@ export default function Register({ setUser }) {
           {form.role === "florist" && (
             <input type="text" className="fora-input animate-fade-in" placeholder="Shop Name" onChange={(e) => setForm({...form, shop_name: e.target.value})} required />
           )}
-          <input type="password" className="fora-input" placeholder="Password" onChange={(e) => setForm({...form, password: e.target.value})} required />
+          <input type="password" name="password" autoComplete="new-password" className="fora-input" placeholder="Password" onChange={(e) => setForm({...form, password: e.target.value})} required />
           <button type="submit" className="btn-fora">Register</button>
         </form>
       </div>
