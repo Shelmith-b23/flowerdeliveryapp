@@ -23,10 +23,16 @@ class PesaPalPayment:
         self.consumer_secret = os.getenv("osGQ364R49cXKeOYSpaOnT++rHs=")
         self.merchant_reference_id = os.getenv("PESAPAL_MERCHANT_ID")
         self.pesapal_public_key = os.getenv("PESAPAL_PUBLIC_KEY")
-        
+
         # Validate required credentials
-        if not all([self.consumer_key, self.consumer_secret, self.merchant_reference_id]):
-            raise ValueError("Missing required PesaPal environment variables")
+        missing = [k for k,v in {
+            'PESAPAL_CONSUMER_KEY': self.consumer_key,
+            'PESAPAL_CONSUMER_SECRET': self.consumer_secret,
+            'PESAPAL_MERCHANT_ID': self.merchant_reference_id
+        }.items() if not v]
+
+        if missing:
+            raise ValueError(f"Missing required PesaPal environment variables: {', '.join(missing)}")
     
     def generate_request_token(self):
         """
