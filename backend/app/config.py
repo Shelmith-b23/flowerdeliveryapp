@@ -65,6 +65,8 @@ class Config:
         }
     
     JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "jwt-secret-key-replace-in-prod")
+    from datetime import timedelta
+    JWT_ACCESS_TOKEN_EXPIRES = timedelta(days=1)
         # CORS: Load from env or use defaults
     CORS_ORIGINS = os.getenv(
             "CORS_ORIGINS",

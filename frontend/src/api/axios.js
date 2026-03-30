@@ -22,7 +22,7 @@ async function request(method, endpoint, data = null) {
   try {
     const response = await fetch(finalURL, config);
     
-    if (response.status === 401) {
+    if (response.status === 401 || response.status === 403) {
       localStorage.removeItem("token");
       localStorage.removeItem("user");
       window.location.href = "/login";
